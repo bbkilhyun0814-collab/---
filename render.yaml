@@ -1,0 +1,15 @@
+# Render(https://render.com) 배포 설정
+# Render 대시보드에서 New → Blueprint 를 누르고 이 저장소를 고르면 아래 설정대로 서버가 만들어집니다.
+services:
+  - type: web
+    name: silver-ai-school
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ANTHROPIC_API_KEY
+        sync: false   # 배포할 때 Render 화면에서 직접 입력 (비워두면 FAQ 답변으로 동작)

@@ -24,6 +24,17 @@ npm start
 
 백엔드 없이 화면만 보려면 `powershell -ExecutionPolicy Bypass -File serve.ps1` 로 8080 포트에서 열 수도 있습니다.
 
+## 인터넷에 공개하기 (Render 무료 배포)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/bbkilhyun0814-collab/---)
+
+1. 위 버튼을 누르고 Render에 깃허브 계정으로 로그인합니다.
+2. `ANTHROPIC_API_KEY` 칸에 Claude API 키를 넣습니다 (비워두면 FAQ 답변으로 동작).
+3. **Apply**를 누르면 몇 분 뒤 `https://silver-ai-school.onrender.com` 같은 공개 주소가 생깁니다.
+
+무료 요금제는 15분 동안 접속이 없으면 잠들었다가 다음 접속 때 30초쯤 걸려 깨어납니다.
+또 무료 서버는 재시작될 때 `data/users.json`이 초기화되므로, 진도 저장을 오래 유지하려면 유료 디스크나 DB로 바꿔야 합니다.
+
 ## 백엔드 API
 
 | 주소 | 역할 |
