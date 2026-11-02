@@ -53,6 +53,7 @@
   <script>
     renderTopbar("스마트폰 AI 배움터", {
       back: false,
+      qr: true,
       speakText: () => Clock.now().speech + " 어서 오세요. 스마트폰 AI 배움터입니다. 배우고 싶은 강좌를 눌러주세요. 모르는 것은 AI 도우미에게 물어보세요."
     });
     Clock.mount(document.getElementById("clock"));

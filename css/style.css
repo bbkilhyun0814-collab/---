@@ -86,6 +86,42 @@ img { max-width: 100%; display: block; }
   cursor: pointer;
 }
 
+.topbar .qr-btn {
+  background: #fff;
+  color: var(--primary-dark);
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  margin-left: 8px;
+  min-height: 36px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+/* QR 팝업 */
+.qr-modal {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.55);
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+.qr-modal.open { display: flex; }
+.qr-box {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  width: 100%; max-width: 420px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.qr-title { font-size: 1.2rem; font-weight: 700; margin: 0 0 12px; }
+.qr-img { width: 100%; max-width: 300px; margin: 0 auto; border: 3px solid var(--border); border-radius: 14px; padding: 8px; background: #fff; }
+.qr-url { font-weight: 700; color: var(--primary-dark); margin: 12px 0 4px; word-break: break-all; }
+
 /* 좁은 화면: 제목을 버튼 아래 줄로 내려 글자가 찌그러지지 않게 */
 @media (max-width: 520px) {
   .topbar { flex-wrap: wrap; }

@@ -187,12 +187,12 @@ function getParam(name) {
 }
 
 // ----- 공통 상단바 렌더링 -----
-function renderTopbar(title, { back = true, speakText = null } = {}) {
+function renderTopbar(title, { back = true, speakText = null, qr = false } = {}) {
   const bar = document.querySelector(".topbar");
   if (!bar) return;
   bar.innerHTML = `
     ${back ? `<button class="back" onclick="history.length > 1 ? history.back() : location.href='index.html'">◀ 뒤로</button>` : ""}
-    <h1>${title}</h1>
+    <h1>${title}${qr ? ` <button class="qr-btn" id="topbarQr" title="QR 코드 보기" aria-label="QR 코드 보기">▦ QR</button>` : ""}</h1>
     ${speakText !== null ? `<button class="speak-btn" id="topbarSpeak">🔊 읽어주기</button>` : ""}
   `;
   if (speakText !== null) {
@@ -201,6 +201,29 @@ function renderTopbar(title, { back = true, speakText = null } = {}) {
       Speaker.speak(t);
     };
   }
+  if (qr) document.getElementById("topbarQr").onclick = showQrModal;
+}
+
+// ----- QR 코드 팝업 (사이트 주소를 휴대폰 카메라로 비추면 바로 열림) -----
+function showQrModal() {
+  let m = document.getElementById("qrModal");
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "qrModal";
+    m.className = "qr-modal";
+    m.innerHTML = `
+      <div class="qr-box" role="dialog" aria-label="QR 코드">
+        <p class="qr-title">📱 휴대폰 카메라로 비춰보세요</p>
+        <img src="images/qr.svg" alt="사이트 QR 코드" class="qr-img">
+        <p class="qr-url">${location.origin.replace(/^https?:\/\//, "")}</p>
+        <p class="sub">카메라 앱을 열고 이 네모를 비추면<br>화면에 뜨는 노란 글씨를 누르세요.</p>
+        <a class="btn btn-outline" href="qr.html" style="margin-top:12px">🖨️ 인쇄용 크게 보기</a>
+        <button class="btn btn-primary" style="margin-top:12px" id="qrClose">닫기</button>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener("click", e => { if (e.target === m || e.target.id === "qrClose") m.classList.remove("open"); });
+  }
+  m.classList.add("open");
 }
 
 document.addEventListener("DOMContentLoaded", () => FontSize.apply());

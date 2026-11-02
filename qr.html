@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR 안내문 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .poster {
+      background: #fff;
+      border: 4px solid var(--primary);
+      border-radius: 28px;
+      padding: 36px 28px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .poster h2 { font-size: 1.9rem; margin: 0 0 6px; color: var(--primary-dark); }
+    .poster .lead { font-size: 1.15rem; margin: 0 0 24px; }
+    .poster img { width: 100%; max-width: 440px; margin: 0 auto; }
+    .poster .url { font-size: 1.3rem; font-weight: 700; margin: 20px 0 6px; word-break: break-all; }
+    .howto { text-align: left; display: inline-block; margin: 20px auto 0; font-size: 1.05rem; }
+    .howto li { margin: 8px 0; }
+    .no-print { }
+    @media print {
+      .topbar, .no-print { display: none !important; }
+      body { background: #fff; }
+      .container { padding: 0; max-width: none; }
+      .poster { border-width: 6px; margin: 0; min-height: 95vh; display: flex; flex-direction: column; justify-content: center; }
+      .poster img { max-width: 60vw; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <div class="poster">
+      <h2>📱 어르신을 위한<br>스마트폰 AI 배움터</h2>
+      <p class="lead">전화·문자·카카오톡·사진·유튜브·AI<br>한 단계씩 그림으로 배워요. 무료입니다.</p>
+      <img src="images/qr.svg" alt="사이트 QR 코드">
+      <p class="url" id="siteUrl">silver-ai-school.onrender.com</p>
+      <p class="sub">인터넷 주소창에 위 주소를 적어도 열려요</p>
+      <ol class="howto">
+        <li>휴대폰에서 <strong>카메라</strong> 앱을 열어요.</li>
+        <li>위의 <strong>네모 무늬(QR)</strong>를 화면에 비춰요.</li>
+        <li>화면에 뜨는 <strong>노란 글씨(주소)</strong>를 한 번 누르면 열려요.</li>
+      </ol>
+    </div>
+
+    <button class="btn btn-primary no-print" onclick="window.print()">🖨️ 인쇄하기</button>
+    <p class="sub no-print" style="text-align:center">A4 한 장에 맞게 인쇄됩니다. 복지관·경로당·게시판에 붙여두세요.</p>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    renderTopbar("QR 안내문", { speakText: "휴대폰 카메라 앱을 열고 네모 무늬를 비춘 뒤, 화면에 뜨는 노란 글씨를 누르면 배움터가 열립니다." });
+    document.getElementById("siteUrl").textContent = location.host || "silver-ai-school.onrender.com";
+  </script>
+</body>
+</html>
