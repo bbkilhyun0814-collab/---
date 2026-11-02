@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 도우미 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <p class="sub" style="text-align:center;margin-top:14px">자주 묻는 질문을 눌러보거나, 아래 칸에 직접 물어보세요.</p>
+    <div class="quick-questions" id="quickQuestions"></div>
+    <div class="chat-log" id="chatLog"></div>
+  </main>
+
+  <div class="chat-input-bar">
+    <div class="inner">
+      <button class="btn-mic" id="micBtn" title="말로 물어보기">🎤</button>
+      <input type="text" id="chatInput" placeholder="궁금한 것을 적어주세요" autocomplete="off">
+      <button class="btn-send" id="sendBtn" title="보내기">➤</button>
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/chat-engine.js"></script>
+  <script>
+    renderTopbar("🤖 AI 도우미", { speakText: "궁금한 것을 말로 하거나 글로 써서 물어보세요. 마이크 버튼을 누르면 말로 할 수 있어요." });
+
+    const log = document.getElementById("chatLog");
+    const input = document.getElementById("chatInput");
+
+    function addBubble(text, who) {
+      const div = document.createElement("div");
+      div.className = `bubble ${who}`;
+      div.textContent = text;
+      if (who === "ai") {
+        const b = document.createElement("button");
+        b.className = "speak-inline";
+        b.textContent = "🔊 읽어주기";
+        b.onclick = () => Speaker.speak(text);
+        div.appendChild(document.createElement("br"));
+        div.appendChild(b);
+      }
+      log.appendChild(div);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      return div;
+    }
+
+    async function ask(text) {
+      text = text.trim();
+      if (!text) return;
+      addBubble(text, "me");
+      input.value = "";
+      const thinking = addBubble("생각하는 중이에요…", "ai");
+      const answer = await ChatEngine.ask(text);
+      thinking.remove();
+      addBubble(answer, "ai");
+      Speaker.speak(answer);
+    }
+
+    document.getElementById("sendBtn").onclick = () => ask(input.value);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") ask(input.value); });
+
+    // 자주 묻는 질문 버튼
+    const qq = document.getElementById("quickQuestions");
+    ChatEngine.quickQuestions.forEach(q => {
+      const b = document.createElement("button");
+      b.textContent = q;
+      b.onclick = () => ask(q);
+      qq.appendChild(b);
+    });
+
+    // 음성 입력 (브라우저 내장)
+    const micBtn = document.getElementById("micBtn");
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      micBtn.onclick = () => alert("이 브라우저에서는 말로 묻기를 지원하지 않습니다. 글로 적어주세요.");
+    } else {
+      const rec = new SR();
+      rec.lang = "ko-KR";
+      rec.interimResults = false;
+      rec.onstart = () => { micBtn.classList.add("listening"); input.placeholder = "듣고 있어요… 말씀하세요"; };
+      rec.onend = () => { micBtn.classList.remove("listening"); input.placeholder = "궁금한 것을 적어주세요"; };
+      rec.onresult = e => ask(e.results[0][0].transcript);
+      rec.onerror = () => { micBtn.classList.remove("listening"); };
+      micBtn.onclick = () => { Speaker.stop(); try { rec.start(); } catch (e) {} };
+    }
+
+    addBubble("안녕하세요! 저는 스마트폰 도우미예요. 😊\n무엇이든 편하게 물어보세요.", "ai");
+  </script>
+</body>
+</html>

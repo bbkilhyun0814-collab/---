@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연습하기 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <div class="step-indicator" id="qIndicator"></div>
+    <div class="step-bar"><div id="qBarFill" style="width:0%"></div></div>
+    <div id="quizArea"></div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/lessons-data.js"></script>
+  <script>
+    const lesson = getLesson(getParam("id"));
+    if (!lesson) location.href = "index.html";
+
+    renderTopbar("연습하기: " + lesson.title, { speakText: () => currentText() });
+
+    let qi = 0, score = 0, answered = false;
+    const area = document.getElementById("quizArea");
+
+    function currentText() {
+      if (qi >= lesson.quiz.length) return `연습 끝. ${lesson.quiz.length}문제 중 ${score}문제를 맞혔어요.`;
+      const q = lesson.quiz[qi];
+      return `문제 ${qi + 1}. ${q.q} ` + q.choices.map((c, i) => `${i + 1}번. ${c}.`).join(" ");
+    }
+
+    function render() {
+      answered = false;
+      const total = lesson.quiz.length;
+      if (qi >= total) return renderResult();
+      const q = lesson.quiz[qi];
+      document.getElementById("qIndicator").textContent = `${total}문제 중 ${qi + 1}번`;
+      document.getElementById("qBarFill").style.width = `${(qi / total) * 100}%`;
+      area.innerHTML = `
+        <div class="card">
+          <p class="quiz-q">Q${qi + 1}. ${q.q}</p>
+          ${q.choices.map((c, i) => `<button class="choice" data-i="${i}">${i + 1}. ${c}</button>`).join("")}
+          <div class="feedback" id="feedback"></div>
+          <button class="btn btn-primary" id="nextQ" style="display:none">다음 문제 ▶</button>
+          <button class="btn btn-outline" style="margin-top:12px" onclick="Speaker.speak(currentText())">🔊 문제 읽어주기</button>
+        </div>
+      `;
+      area.querySelectorAll(".choice").forEach(btn => btn.onclick = () => choose(+btn.dataset.i));
+      document.getElementById("nextQ").onclick = () => { qi++; render(); };
+      window.scrollTo(0, 0);
+    }
+
+    function choose(i) {
+      if (answered) return;
+      answered = true;
+      const q = lesson.quiz[qi];
+      const buttons = area.querySelectorAll(".choice");
+      buttons.forEach(b => b.disabled = true);
+      const fb = document.getElementById("feedback");
+      if (i === q.answer) {
+        score++;
+        buttons[i].classList.add("correct");
+        fb.textContent = "🎉 정답이에요! 잘하셨어요!";
+        fb.className = "feedback ok";
+        Speaker.speak("정답이에요! 잘하셨어요!");
+      } else {
+        buttons[i].classList.add("wrong");
+        buttons[q.answer].classList.add("correct");
+        fb.textContent = `괜찮아요. 정답은 ${q.answer + 1}번이에요.`;
+        fb.className = "feedback no";
+        Speaker.speak(`괜찮아요. 정답은 ${q.answer + 1}번, ${q.choices[q.answer]} 이에요.`);
+      }
+      const nextBtn = document.getElementById("nextQ");
+      nextBtn.style.display = "flex";
+      if (qi === lesson.quiz.length - 1) nextBtn.textContent = "결과 보기 ▶";
+    }
+
+    function renderResult() {
+      const total = lesson.quiz.length;
+      Progress.setQuizScore(lesson.id, score, total);
+      document.getElementById("qIndicator").textContent = "연습 끝!";
+      document.getElementById("qBarFill").style.width = "100%";
+      const perfect = score === total;
+      area.innerHTML = `
+        <div class="card" style="text-align:center">
+          <div class="step-visual">${perfect ? "🏆" : "👏"}</div>
+          <p class="step-title">${perfect ? "완벽해요!" : "수고하셨어요!"}</p>
+          <p class="step-text">${total}문제 중 <strong>${score}문제</strong>를 맞히셨어요.</p>
+          <p class="sub">${perfect ? "이제 직접 해보셔도 충분해요." : "헷갈리는 부분은 강좌를 다시 한 번 보세요."}</p>
+          <button class="btn btn-primary" style="margin-top:20px" onclick="location.href='index.html'">🏠 처음 화면으로</button>
+          <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='lesson.html?id=${lesson.id}'">📖 강좌 다시 보기</button>
+          <button class="btn btn-gray" style="margin-top:12px" onclick="qi=0;score=0;render()">🔁 다시 풀기</button>
+        </div>
+      `;
+      Speaker.speak(currentText());
+    }
+
+    render();
+  </script>
+</body>
+</html>

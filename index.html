@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>어르신을 위한 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <section class="clock" aria-live="polite">
+      <div id="clock"></div>
+      <button class="clock-speak" onclick="Speaker.speak(Clock.now().speech)">🔊 날짜와 시간 듣기</button>
+    </section>
+
+    <section class="hero" id="hero">
+      <p class="big">📱 어서 오세요!</p>
+      <p>천천히, 한 걸음씩 함께 배워요.<br>모르는 건 언제든 AI 도우미에게 물어보세요.</p>
+    </section>
+    <div id="authBox"></div>
+
+    <div class="size-controls" aria-label="글자 크기">
+      <button data-size="normal" onclick="FontSize.set('normal')">가 보통</button>
+      <button data-size="large" onclick="FontSize.set('large')">가 크게</button>
+      <button data-size="xlarge" onclick="FontSize.set('xlarge')">가 아주 크게</button>
+    </div>
+
+    <h2>📚 배움 강좌</h2>
+    <p class="sub">기초 → 중급 → 고급 순서로 배우면 좋아요. 궁금한 것부터 눌러보셔도 됩니다.</p>
+    <div id="lessonList"></div>
+
+    <h2>🤖 도움이 필요하세요?</h2>
+    <a class="menu-card" href="chat.html">
+      <div class="icon">🤖</div>
+      <div>
+        <p class="title">AI 도우미에게 물어보기</p>
+        <p class="desc">말로 하거나 글로 써서 질문하세요</p>
+      </div>
+      <span class="arrow">▶</span>
+    </a>
+
+    <p class="footer-note">
+      어르신을 위한 스마트폰 AI 배움터<br>
+      <a href="#" onclick="if(confirm('배운 기록을 모두 지울까요?')){Progress.reset();location.reload();}return false;" style="text-decoration:underline">배운 기록 지우기</a>
+    </p>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/lessons-data.js"></script>
+  <script>
+    renderTopbar("스마트폰 AI 배움터", {
+      back: false,
+      speakText: () => Clock.now().speech + " 어서 오세요. 스마트폰 AI 배움터입니다. 배우고 싶은 강좌를 눌러주세요. 모르는 것은 AI 도우미에게 물어보세요."
+    });
+    Clock.mount(document.getElementById("clock"));
+
+    // 로그인 안내 / 환영 문구
+    function renderAuth() {
+      const a = Auth.get();
+      const box = document.getElementById("authBox");
+      if (a && a.token) {
+        document.querySelector("#hero .big").textContent = `📱 ${a.name}님, 어서 오세요!`;
+        box.innerHTML = `<p class="sub" style="text-align:center">배운 기록이 저장되고 있어요 ✅
+          <a href="#" id="logoutLink" style="text-decoration:underline;margin-left:10px">다른 사람으로 바꾸기</a></p>`;
+        document.getElementById("logoutLink").onclick = async e => {
+          e.preventDefault();
+          if (confirm("기록 저장을 끄고 처음 상태로 돌아갈까요? (저장된 기록은 서버에 남아 있어요)")) {
+            await Auth.logout(); Progress.reset(); location.reload();
+          }
+        };
+      } else {
+        box.innerHTML = `<a class="btn btn-outline" href="login.html">📒 내 기록 저장하기 (이름 + 숫자 4자리)</a>`;
+      }
+    }
+    renderAuth();
+
+    const CATEGORY_ICONS = { "기초": "📱", "카카오톡": "💛", "사진": "📷", "유튜브": "▶️", "AI": "🤖", "안전": "🛡️" };
+    const list = document.getElementById("lessonList");
+
+    async function renderLessons() {
+    await Progress.pullFromServer(); // 로그인 상태면 서버 기록을 먼저 받아옴
+    list.innerHTML = "";
+    const doneCount = LESSONS.filter(l => Progress.get(l.id).done).length;
+    if (doneCount > 0) {
+      list.insertAdjacentHTML("beforeend",
+        `<p class="sub" style="text-align:center">지금까지 <strong>${LESSONS.length}개 중 ${doneCount}개</strong> 강좌를 다 배우셨어요 👏</p>`);
+    }
+
+    LEVELS.forEach(level => {
+      const items = LESSONS.filter(l => l.level === level.id);
+      if (!items.length) return;
+      const doneHere = items.filter(l => Progress.get(l.id).done).length;
+      const pct = Math.round((doneHere / items.length) * 100);
+      const allDone = doneHere === items.length;
+      list.insertAdjacentHTML("beforeend", `
+        <section class="level" style="--level-color:${level.color}">
+          <div class="level-head">
+            <div class="level-icon">${level.icon}</div>
+            <div class="level-text">
+              <h3 class="level-title">${level.name} ${allDone ? "🏆" : ""}</h3>
+              <p class="level-desc">${level.desc}</p>
+            </div>
+            <div class="level-count">${doneHere}/${items.length}</div>
+          </div>
+          <div class="level-bar"><div style="width:${pct}%"></div></div>
+          <div class="level-list" id="level-${level.id}"></div>
+        </section>
+      `);
+      const box = document.getElementById(`level-${level.id}`);
+      items.forEach(lesson => {
+        const p = Progress.get(lesson.id);
+        let pill;
+        if (p.done) pill = `<span class="progress-pill">✅ 다 배웠어요</span>`;
+        else if (p.step > 0) pill = `<span class="progress-pill">📖 ${p.step + 1}단계 진행 중</span>`;
+        else pill = `<span class="progress-pill todo">아직 안 배웠어요</span>`;
+
+        box.insertAdjacentHTML("beforeend", `
+          <a class="menu-card" href="lesson.html?id=${lesson.id}">
+            <div class="icon">${lesson.icon}</div>
+            <div>
+              <p class="title">${lesson.title}</p>
+              <p class="desc">${lesson.desc}</p>
+              ${pill} <span class="topic-tag">${CATEGORY_ICONS[lesson.category] || ""} ${lesson.category}</span>
+            </div>
+            <span class="arrow">▶</span>
+          </a>
+        `);
+      });
+    });
+    }
+    renderLessons();
+  </script>
+</body>
+</html>
