@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>부탁 문장 조립 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <div id="intro" class="card" style="text-align:center">
+      <p class="step-title">🧩 부탁 문장 조립</p>
+      <p class="step-text">상황이 나오면 <strong>지금 상태 → 원하는 것 → 답 형태</strong> 카드를 하나씩 골라 AI에게 할 부탁을 만들어요.</p>
+      <p class="sub">어떤 카드를 고르느냐에 따라 AI의 답이 달라져요. 별 ⭐ 세 개가 나오면 최고!</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="begin()">▶ 시작하기</button>
+    </div>
+
+    <div id="play" style="display:none">
+      <div class="step-indicator" id="roundLabel"></div>
+      <div class="step-bar"><div id="bar" style="width:0%"></div></div>
+
+      <div class="card">
+        <div class="situation"><span class="situation-icon" id="sitIcon"></span><p class="step-text" id="sitText"></p></div>
+      </div>
+
+      <div id="slots"></div>
+
+      <div class="card" id="sentenceBox" style="display:none">
+        <p class="sub">완성된 부탁</p>
+        <p class="prompt-sentence" id="sentence"></p>
+        <button class="btn btn-green" id="sendBtn">📤 AI에게 보내기</button>
+      </div>
+
+      <div class="card" id="resultBox" style="display:none">
+        <p class="stars" id="stars"></p>
+        <p class="sub">🤖 AI의 답</p>
+        <div class="bubble ai" id="reply" style="max-width:100%"></div>
+        <div class="tip" id="lesson"></div>
+        <button class="btn btn-primary" id="nextBtn" style="margin-top:16px">다음 상황 ▶</button>
+      </div>
+    </div>
+
+    <div id="done" class="card" style="display:none;text-align:center">
+      <div class="step-visual">🏆</div>
+      <p class="step-title">모두 끝났어요!</p>
+      <p class="step-text" id="doneText"></p>
+      <div class="tip">기억하세요: <strong>지금 상태 + 원하는 것 + 답 형태</strong>. 자세히 말할수록 AI가 잘 도와줘요.</div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="location.reload()">🔁 다시 하기</button>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='games.html'">🎲 다른 놀이</button>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/games-data.js"></script>
+  <script>
+    renderTopbar("🧩 부탁 문장 조립", { speakText: () => currentSpeech() });
+
+    let rounds = [], ri = 0, picks = [], totalStars = 0;
+    const SLOT_COLORS = ["#C45A1E", "#2457A6", "#7A5CC9"];
+
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+    function currentSpeech() {
+      if (!rounds.length) return "상황이 나오면 지금 상태, 원하는 것, 답 형태 카드를 골라 부탁을 만들어요.";
+      const r = rounds[ri]; return `상황. ${r.situation} 지금 상태, 원하는 것, 답 형태를 차례로 골라 주세요.`;
+    }
+
+    function begin() {
+      rounds = shuffle(PROMPT_ROUNDS.slice());
+      document.getElementById("intro").style.display = "none";
+      document.getElementById("play").style.display = "block";
+      render();
+    }
+
+    function render() {
+      const r = rounds[ri];
+      picks = [null, null, null];
+      document.getElementById("roundLabel").textContent = `${rounds.length}문제 중 ${ri + 1}번`;
+      document.getElementById("bar").style.width = `${(ri / rounds.length) * 100}%`;
+      document.getElementById("sitIcon").textContent = r.icon;
+      document.getElementById("sitText").textContent = r.situation;
+      document.getElementById("sentenceBox").style.display = "none";
+      document.getElementById("resultBox").style.display = "none";
+      const slots = document.getElementById("slots");
+      slots.innerHTML = "";
+      r.slots.forEach((slot, si) => {
+        const opts = shuffle(slot.options.map((o, oi) => ({ ...o, oi })));
+        const div = document.createElement("div");
+        div.className = "card slot-card";
+        div.style.borderColor = SLOT_COLORS[si];
+        div.innerHTML = `<p class="slot-label" style="background:${SLOT_COLORS[si]}">${si + 1}. ${slot.label}</p>` +
+          opts.map(o => `<button class="choice" data-si="${si}" data-pts="${o.pts}">${o.text}</button>`).join("");
+        slots.appendChild(div);
+      });
+      slots.querySelectorAll(".choice").forEach(b => b.onclick = () => pick(b));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      Speaker.speak(currentSpeech());
+    }
+
+    function pick(btn) {
+      const si = +btn.dataset.si;
+      btn.parentElement.querySelectorAll(".choice").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      picks[si] = { text: btn.textContent, pts: +btn.dataset.pts };
+      if (picks.every(p => p)) {
+        const parts = picks.map(p => p.text === "(아무 말 안 함)" ? "" : p.text).filter(Boolean);
+        document.getElementById("sentence").textContent = "“" + parts.join(" ") + "”";
+        const box = document.getElementById("sentenceBox");
+        box.style.display = "block";
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    document.getElementById("sendBtn").onclick = () => {
+      const r = rounds[ri];
+      const pts = picks.reduce((s, p) => s + p.pts, 0);        // 0~6
+      const stars = pts >= 5 ? 3 : pts >= 3 ? 2 : 1;
+      totalStars += stars;
+      const reply = stars === 3 ? r.replies.great : stars === 2 ? r.replies.ok : r.replies.bad;
+      document.getElementById("stars").textContent = "⭐".repeat(stars) + "☆".repeat(3 - stars);
+      document.getElementById("reply").textContent = reply;
+      const weak = picks.map((p, i) => p.pts < 2 ? r.slots[i].label : null).filter(Boolean);
+      document.getElementById("lesson").innerHTML = stars === 3
+        ? "💡 완벽해요! 세 가지를 다 말하니 딱 맞는 답이 나왔어요."
+        : `💡 <strong>${weak.join(", ")}</strong>을(를) 더 자세히 말하면 답이 훨씬 좋아져요. 다음엔 그 카드를 바꿔 보세요.`;
+      const rb = document.getElementById("resultBox");
+      rb.style.display = "block";
+      rb.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("nextBtn").textContent = ri === rounds.length - 1 ? "결과 보기 ▶" : "다음 상황 ▶";
+      Speaker.speak(stars === 3 ? "별 세 개! 완벽해요." : stars === 2 ? "별 두 개. 조금만 더 자세히 말해 볼까요?" : "별 한 개. AI가 무슨 말인지 잘 몰랐어요. 더 자세히 말해 주세요.");
+    };
+
+    document.getElementById("nextBtn").onclick = () => {
+      ri++;
+      if (ri < rounds.length) render();
+      else {
+        document.getElementById("play").style.display = "none";
+        document.getElementById("done").style.display = "block";
+        const max = rounds.length * 3;
+        document.getElementById("doneText").textContent = `별 ${max}개 중 ${totalStars}개를 받으셨어요. ${totalStars >= max - 2 ? "AI와 아주 잘 이야기하시네요!" : "다시 하면 더 잘하실 거예요!"}`;
+        Speaker.speak(`별 ${max}개 중 ${totalStars}개를 받으셨어요. 참 잘하셨어요!`);
+      }
+    };
+  </script>
+</body>
+</html>

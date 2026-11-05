@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>놀이하기 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <section class="hero">
+      <p class="big">🎲 놀면서 배워요</p>
+      <p>틀려도 괜찮아요. 웃으면서 하다 보면 저절로 익혀집니다.</p>
+    </section>
+
+    <div class="size-controls">
+      <button data-size="normal" onclick="FontSize.set('normal')">휴대폰</button>
+      <button data-size="xlarge" onclick="FontSize.set('xlarge')">🖥️ 강의실 큰 화면</button>
+    </div>
+
+    <a class="menu-card" href="game-match.html">
+      <div class="icon">🃏</div>
+      <div>
+        <p class="title">짝 맞추기</p>
+        <p class="desc">뒤집어서 '어려운 말'과 '쉬운 말' 짝을 찾아요</p>
+        <span class="progress-pill todo">기억 놀이 · 쉬움~보통</span>
+      </div>
+      <span class="arrow">▶</span>
+    </a>
+
+    <a class="menu-card" href="game-prompt.html">
+      <div class="icon">🧩</div>
+      <div>
+        <p class="title">부탁 문장 조립</p>
+        <p class="desc">카드를 골라 AI에게 할 부탁을 만들고, 답이 달라지는 걸 봐요</p>
+        <span class="progress-pill todo">생각 놀이 · 보통</span>
+      </div>
+      <span class="arrow">▶</span>
+    </a>
+
+    <a class="menu-card" href="game-detect.html">
+      <div class="icon">🕵️</div>
+      <div>
+        <p class="title">진짜냐 AI냐 사기냐</p>
+        <p class="desc">사진·문자·전화를 보고 셋 중 무엇인지 가려내요. 두 팀 대결!</p>
+        <span class="progress-pill todo">판별 놀이 · 어려움</span>
+      </div>
+      <span class="arrow">▶</span>
+    </a>
+
+    <div class="card">
+      <h3 style="margin-top:0">👩‍🏫 강의실에서 할 때</h3>
+      <p class="sub">위의 '강의실 큰 화면' 버튼을 누르면 글씨와 버튼이 더 커져요. 화면에 띄우고 어르신들이 답을 외치면 선생님이 눌러주세요.</p>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    renderTopbar("🎲 놀이하기", { speakText: "놀면서 배워요. 짝 맞추기, 부탁 문장 조립, 진짜냐 AI냐 사기냐. 세 가지 놀이가 있어요. 틀려도 괜찮아요." });
+  </script>
+</body>
+</html>

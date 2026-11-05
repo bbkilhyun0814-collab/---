@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>짝 맞추기 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <div id="setup" class="card" style="text-align:center">
+      <p class="step-title">🃏 짝 맞추기</p>
+      <p class="step-text">카드를 두 장씩 뒤집어서 <strong style="color:var(--primary-dark)">어려운 말</strong>과 <strong style="color:#2457A6">쉬운 말</strong> 짝을 찾아요.</p>
+      <p class="sub">짝이 맞으면 카드가 열린 채로 남고, 틀리면 다시 뒤집혀요. 다 찾으면 끝!</p>
+      <button class="btn btn-green" style="margin-top:16px" onclick="start(6)">쉬움 · 짝 6개 (카드 12장)</button>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="start(8)">보통 · 짝 8개 (카드 16장)</button>
+    </div>
+
+    <div id="play" style="display:none">
+      <div class="game-status">
+        <span>🔄 뒤집기 <strong id="moves">0</strong>번</span>
+        <span>✅ 찾은 짝 <strong id="found">0</strong>/<span id="total">0</span></span>
+        <span>⏱️ <strong id="timer">0:00</strong></span>
+      </div>
+      <div class="match-grid" id="grid"></div>
+      <p class="feedback" id="msg"></p>
+      <button class="btn btn-gray" style="margin-top:10px" onclick="location.reload()">↩️ 처음으로</button>
+    </div>
+
+    <div id="done" class="card" style="display:none;text-align:center">
+      <div class="step-visual">🏆</div>
+      <p class="step-title">다 찾으셨어요!</p>
+      <p class="step-text" id="doneText"></p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="location.reload()">🔁 다시 하기</button>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='games.html'">🎲 다른 놀이</button>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/games-data.js"></script>
+  <script>
+    renderTopbar("🃏 짝 맞추기", { speakText: "카드를 두 장씩 뒤집어서 어려운 말과 쉬운 말 짝을 찾아요. 짝이 맞으면 열린 채로 남아요." });
+
+    let first = null, lock = false, moves = 0, found = 0, total = 0, seconds = 0, timerId = null;
+
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+    function start(n) {
+      total = n;
+      const pairs = shuffle(MATCH_PAIRS.slice()).slice(0, n);
+      const cards = [];
+      pairs.forEach((p, i) => {
+        cards.push({ id: i, kind: "term", text: p.term, say: p.say });
+        cards.push({ id: i, kind: "easy", text: p.easy, say: p.say });
+      });
+      shuffle(cards);
+      const grid = document.getElementById("grid");
+      grid.className = "match-grid " + (n === 6 ? "cols-3" : "cols-4");
+      grid.innerHTML = "";
+      cards.forEach((c, idx) => {
+        const el = document.createElement("button");
+        el.className = "match-card";
+        el.dataset.id = c.id; el.dataset.kind = c.kind; el.dataset.say = c.say;
+        el.innerHTML = `<span class="face back">?</span><span class="face front ${c.kind}">${c.text}</span>`;
+        el.onclick = () => flip(el);
+        grid.appendChild(el);
+      });
+      document.getElementById("total").textContent = n;
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("play").style.display = "block";
+      timerId = setInterval(() => { seconds++; document.getElementById("timer").textContent = `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`; }, 1000);
+      Speaker.speak("시작! 카드를 눌러 뒤집어 보세요.");
+    }
+
+    function flip(el) {
+      if (lock || el.classList.contains("open") || el.classList.contains("matched")) return;
+      el.classList.add("open");
+      if (!first) { first = el; return; }
+      moves++; document.getElementById("moves").textContent = moves;
+      const msg = document.getElementById("msg");
+      if (first.dataset.id === el.dataset.id && first.dataset.kind !== el.dataset.kind) {
+        first.classList.add("matched"); el.classList.add("matched");
+        found++; document.getElementById("found").textContent = found;
+        msg.className = "feedback ok"; msg.textContent = "🎉 짝이 맞았어요! " + el.dataset.say;
+        Speaker.speak("맞았어요! " + el.dataset.say);
+        first = null;
+        if (found === total) finish();
+      } else {
+        lock = true;
+        msg.className = "feedback no"; msg.textContent = "아니에요. 다시 찾아볼까요?";
+        const a = first; first = null;
+        setTimeout(() => { a.classList.remove("open"); el.classList.remove("open"); lock = false; }, 1100);
+      }
+    }
+
+    function finish() {
+      clearInterval(timerId);
+      setTimeout(() => {
+        document.getElementById("play").style.display = "none";
+        document.getElementById("done").style.display = "block";
+        const t = `${Math.floor(seconds/60)}분 ${seconds%60}초, 뒤집기 ${moves}번`;
+        document.getElementById("doneText").textContent = `${total}쌍을 모두 찾았어요. ${t} 걸렸어요. 참 잘하셨어요!`;
+        Speaker.speak(`${total}쌍을 모두 찾았어요. 참 잘하셨어요!`);
+      }, 900);
+    }
+  </script>
+</body>
+</html>

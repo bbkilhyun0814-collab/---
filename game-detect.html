@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>진짜냐 AI냐 사기냐 - 스마트폰 AI 배움터</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <main class="container">
+    <div id="intro" class="card" style="text-align:center">
+      <p class="step-title">🕵️ 진짜냐 AI냐 사기냐</p>
+      <p class="step-text">사진·문자·전화가 나오면 셋 중 무엇인지 맞혀요.</p>
+      <div class="detect-legend">
+        <span class="legend real">📷 진짜</span>
+        <span class="legend ai">🤖 AI가 만든 것</span>
+        <span class="legend scam">⚠️ 사기</span>
+      </div>
+      <p class="sub">강의실에서는 두 팀으로 나눠 번갈아 답해요. 맞히면 10점!</p>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="begin(true)">👥 두 팀 대결로 시작</button>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="begin(false)">🙂 혼자 하기</button>
+      <label class="sub" style="display:block;margin-top:14px"><input type="checkbox" id="useTimer" style="width:26px;height:26px;vertical-align:middle"> 한 문제 20초 제한</label>
+    </div>
+
+    <div id="play" style="display:none">
+      <div class="scoreboard" id="scoreboard"></div>
+      <div class="step-indicator" id="roundLabel"></div>
+      <div class="step-bar"><div id="bar" style="width:0%"></div></div>
+
+      <div class="card detect-card">
+        <div class="detect-icon" id="icon"></div>
+        <p class="detect-text" id="text"></p>
+        <p class="detect-timer" id="timer"></p>
+      </div>
+
+      <div class="detect-buttons" id="buttons">
+        <button class="btn detect-btn real" data-a="real">📷<br>진짜</button>
+        <button class="btn detect-btn ai" data-a="ai">🤖<br>AI가 만든 것</button>
+        <button class="btn detect-btn scam" data-a="scam">⚠️<br>사기</button>
+      </div>
+
+      <div class="card" id="resultBox" style="display:none">
+        <p class="feedback" id="verdict"></p>
+        <div class="tip" id="why"></div>
+        <button class="btn btn-primary" id="nextBtn" style="margin-top:16px">다음 문제 ▶</button>
+      </div>
+    </div>
+
+    <div id="done" class="card" style="display:none;text-align:center">
+      <div class="step-visual">🏆</div>
+      <p class="step-title" id="doneTitle"></p>
+      <p class="step-text" id="doneText"></p>
+      <div class="tip">기억하세요: <strong>손가락·글씨·그림자</strong>가 이상하면 AI, <strong>링크·돈·급하게</strong>가 나오면 사기!</div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="location.reload()">🔁 다시 하기</button>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='games.html'">🎲 다른 놀이</button>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/games-data.js"></script>
+  <script>
+    renderTopbar("🕵️ 진짜냐 AI냐 사기냐", { speakText: () => currentSpeech() });
+
+    const NAMES = { real: "📷 진짜", ai: "🤖 AI가 만든 것", scam: "⚠️ 사기" };
+    let items = [], qi = 0, teams = false, score = [0, 0], turn = 0, answered = false, timerId = null, left = 20, useTimer = false;
+
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+    function currentSpeech() { return items.length ? items[qi].text + " 진짜일까요, AI가 만든 걸까요, 사기일까요?" : "사진, 문자, 전화를 보고 진짜인지, AI가 만든 건지, 사기인지 맞혀요."; }
+
+    function begin(two) {
+      teams = two; useTimer = document.getElementById("useTimer").checked;
+      items = shuffle(DETECT_ITEMS.slice());
+      document.getElementById("intro").style.display = "none";
+      document.getElementById("play").style.display = "block";
+      document.querySelectorAll(".detect-btn").forEach(b => b.onclick = () => answer(b.dataset.a));
+      render();
+    }
+
+    function renderScore() {
+      const sb = document.getElementById("scoreboard");
+      if (!teams) { sb.innerHTML = `<div class="team solo">점수 <strong>${score[0]}</strong></div>`; return; }
+      sb.innerHTML = [0, 1].map(t => `<div class="team ${turn === t ? "active" : ""}">${t === 0 ? "🔴 A팀" : "🔵 B팀"}<strong>${score[t]}</strong>${turn === t ? "<small>차례!</small>" : ""}</div>`).join("");
+    }
+
+    function render() {
+      const it = items[qi]; answered = false;
+      renderScore();
+      document.getElementById("roundLabel").textContent = `${items.length}문제 중 ${qi + 1}번` + (teams ? (turn === 0 ? " · 🔴 A팀 차례" : " · 🔵 B팀 차례") : "");
+      document.getElementById("bar").style.width = `${(qi / items.length) * 100}%`;
+      document.getElementById("icon").textContent = it.icon;
+      document.getElementById("text").textContent = it.text;
+      document.getElementById("resultBox").style.display = "none";
+      document.getElementById("buttons").style.display = "grid";
+      document.querySelectorAll(".detect-btn").forEach(b => { b.disabled = false; b.classList.remove("correct", "wrong"); });
+      clearInterval(timerId);
+      const tEl = document.getElementById("timer");
+      if (useTimer) {
+        left = 20; tEl.textContent = `⏱️ ${left}초`;
+        timerId = setInterval(() => { left--; tEl.textContent = `⏱️ ${left}초`; if (left <= 0) { clearInterval(timerId); answer(null); } }, 1000);
+      } else tEl.textContent = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      Speaker.speak(currentSpeech());
+    }
+
+    function answer(a) {
+      if (answered) return;
+      answered = true; clearInterval(timerId);
+      const it = items[qi];
+      const ok = a === it.answer;
+      document.querySelectorAll(".detect-btn").forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === it.answer) b.classList.add("correct");
+        else if (b.dataset.a === a) b.classList.add("wrong");
+      });
+      const v = document.getElementById("verdict");
+      if (ok) { score[teams ? turn : 0] += 10; v.className = "feedback ok"; v.textContent = "🎉 정답! +10점"; }
+      else if (a === null) { v.className = "feedback no"; v.textContent = `⏰ 시간 끝! 정답은 ${NAMES[it.answer]}`; }
+      else { v.className = "feedback no"; v.textContent = `아쉬워요. 정답은 ${NAMES[it.answer]}`; }
+      document.getElementById("why").textContent = "💡 " + it.why;
+      renderScore();
+      const rb = document.getElementById("resultBox");
+      rb.style.display = "block"; rb.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("nextBtn").textContent = qi === items.length - 1 ? "결과 보기 ▶" : "다음 문제 ▶";
+      Speaker.speak((ok ? "정답! " : "정답은 " + NAMES[it.answer].replace(/^\S+\s/, "") + ". ") + it.why);
+    }
+
+    document.getElementById("nextBtn").onclick = () => {
+      qi++; if (teams) turn = 1 - turn;
+      if (qi < items.length) render();
+      else {
+        document.getElementById("play").style.display = "none";
+        document.getElementById("done").style.display = "block";
+        let title, text;
+        if (teams) {
+          title = score[0] === score[1] ? "무승부!" : (score[0] > score[1] ? "🔴 A팀 승리!" : "🔵 B팀 승리!");
+          text = `A팀 ${score[0]}점 · B팀 ${score[1]}점`;
+        } else {
+          title = score[0] >= items.length * 10 * 0.8 ? "탐정 합격!" : "수고하셨어요!";
+          text = `${items.length}문제 중 ${score[0] / 10}문제를 맞혔어요.`;
+        }
+        document.getElementById("doneTitle").textContent = title;
+        document.getElementById("doneText").textContent = text;
+        Speaker.speak(title + " " + text);
+      }
+    };
+  </script>
+</body>
+</html>
