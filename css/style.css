@@ -78,11 +78,11 @@ img { max-width: 100%; display: block; }
   background: #fff;
   color: var(--primary-dark);
   border: none;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: 14px;
-  min-height: 56px;
+  min-height: 44px;
   cursor: pointer;
 }
 
@@ -581,6 +581,6 @@ html[data-size="xlarge"] { font-size: 30px; }
 /* 메뉴로 단계 이동 시 상단바 높이만큼 띄우는 계산은 js/common.js scrollToHash 에 있음 */
 @media (max-width: 520px) {
   .topbar .back { margin-right: 0; }
-  .topbar .speak-btn { margin-left: auto; }
+  .topbar .menu-btn { margin-left: auto; }
 }
 .menu-modal { overflow-y: auto; align-items: flex-start; }   /* 화면이 작아도 메뉴를 끝까지 내려볼 수 있게 */

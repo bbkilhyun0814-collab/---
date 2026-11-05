@@ -193,8 +193,8 @@ function renderTopbar(title, { back = true, speakText = null, qr = false, menu =
   bar.innerHTML = `
     ${back ? `<button class="back" onclick="history.length > 1 ? history.back() : location.href='index.html'">◀ 뒤로</button>` : ""}
     <h1>${title}${qr ? ` <button class="qr-btn" id="topbarQr" title="QR 코드 보기" aria-label="QR 코드 보기">▦ QR</button>` : ""}</h1>
-    ${speakText !== null ? `<button class="speak-btn" id="topbarSpeak">🔊 읽어주기</button>` : ""}
     ${menu ? `<button class="menu-btn" id="topbarMenu" aria-label="메뉴 열기">☰ 메뉴</button>` : ""}
+    ${speakText !== null ? `<button class="speak-btn" id="topbarSpeak">🔊 읽어주기</button>` : ""}
   `;
   if (speakText !== null) {
     document.getElementById("topbarSpeak").onclick = () => {
