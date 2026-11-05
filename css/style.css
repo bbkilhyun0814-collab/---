@@ -544,3 +544,43 @@ html[data-size="xlarge"] { font-size: 30px; }
   cursor: pointer;
 }
 .size-controls button.active { border-color: var(--primary); background: var(--primary-light); }
+
+/* ----- 상단바 ☰ 메뉴 버튼과 바로가기 메뉴 ----- */
+.topbar .menu-btn {
+  background: var(--primary-dark);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.7);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 14px;
+  min-height: 56px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-box { padding: 20px 16px; }
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  --menu-color: var(--primary);
+  border: 3px solid var(--menu-color);
+  color: var(--text);
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 10px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: left;
+}
+.menu-link:active { background: #fff3e6; }
+.menu-link-icon { font-size: 1.6rem; width: 44px; text-align: center; }
+/* 메뉴로 단계 이동 시 상단바 높이만큼 띄우는 계산은 js/common.js scrollToHash 에 있음 */
+@media (max-width: 520px) {
+  .topbar .back { margin-right: 0; }
+  .topbar .speak-btn { margin-left: auto; }
+}
+.menu-modal { overflow-y: auto; align-items: flex-start; }   /* 화면이 작아도 메뉴를 끝까지 내려볼 수 있게 */

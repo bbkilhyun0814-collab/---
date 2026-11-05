@@ -187,13 +187,14 @@ function getParam(name) {
 }
 
 // ----- 공통 상단바 렌더링 -----
-function renderTopbar(title, { back = true, speakText = null, qr = false } = {}) {
+function renderTopbar(title, { back = true, speakText = null, qr = false, menu = true } = {}) {
   const bar = document.querySelector(".topbar");
   if (!bar) return;
   bar.innerHTML = `
     ${back ? `<button class="back" onclick="history.length > 1 ? history.back() : location.href='index.html'">◀ 뒤로</button>` : ""}
     <h1>${title}${qr ? ` <button class="qr-btn" id="topbarQr" title="QR 코드 보기" aria-label="QR 코드 보기">▦ QR</button>` : ""}</h1>
     ${speakText !== null ? `<button class="speak-btn" id="topbarSpeak">🔊 읽어주기</button>` : ""}
+    ${menu ? `<button class="menu-btn" id="topbarMenu" aria-label="메뉴 열기">☰ 메뉴</button>` : ""}
   `;
   if (speakText !== null) {
     document.getElementById("topbarSpeak").onclick = () => {
@@ -202,6 +203,60 @@ function renderTopbar(title, { back = true, speakText = null, qr = false } = {})
     };
   }
   if (qr) document.getElementById("topbarQr").onclick = showQrModal;
+  if (menu) document.getElementById("topbarMenu").onclick = showMenuModal;
+}
+
+// ----- 바로가기 메뉴 (어느 화면에서든 단계·놀이·도우미로 한 번에 이동) -----
+const MENU_ITEMS = [
+  { icon: "🏠", text: "처음 화면", href: "index.html" },
+  { icon: "🌱", text: "기초 단계", href: "index.html#level-basic", color: "#4a9d6c" },
+  { icon: "🌿", text: "중급 단계", href: "index.html#level-middle", color: "#e8742c" },
+  { icon: "🌳", text: "고급 단계", href: "index.html#level-advanced", color: "#7a5cc9" },
+  { icon: "🎲", text: "놀이하기", href: "games.html" },
+  { icon: "🤖", text: "AI 도우미", href: "chat.html" },
+];
+
+function showMenuModal() {
+  let m = document.getElementById("menuModal");
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "menuModal";
+    m.className = "qr-modal menu-modal";
+    m.innerHTML = `
+      <div class="qr-box menu-box" role="dialog" aria-label="바로가기 메뉴">
+        <p class="qr-title">☰ 어디로 갈까요?</p>
+        ${MENU_ITEMS.map(i => `<a class="menu-link" href="${i.href}" ${i.color ? `style="--menu-color:${i.color}"` : ""}><span class="menu-link-icon">${i.icon}</span>${i.text}</a>`).join("")}
+        <button class="btn btn-outline" style="margin-top:12px" id="menuClose">닫기</button>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener("click", e => {
+      if (e.target === m || e.target.id === "menuClose") m.classList.remove("open");
+      const a = e.target.closest(".menu-link");
+      if (a) {
+        m.classList.remove("open");
+        // 같은 화면 안의 단계로 가는 경우: 주소만 바뀌므로 직접 스크롤
+        const [page, hash] = a.getAttribute("href").split("#");
+        const here = location.pathname.split("/").pop() || "index.html";
+        if (hash && here === page) {
+          e.preventDefault();
+          history.replaceState(null, "", "#" + hash);
+          scrollToHash();
+        }
+      }
+    });
+  }
+  m.classList.add("open");
+}
+
+// 주소 뒤 #level-basic 같은 표시가 있으면 그 자리로 스크롤 (상단바에 가리지 않게)
+function scrollToHash() {
+  const id = location.hash.slice(1);
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  const bar = document.querySelector(".topbar");
+  const offset = (bar ? bar.offsetHeight : 0) + 12;
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: "smooth" });
 }
 
 // ----- QR 코드 팝업 (사이트 주소를 휴대폰 카메라로 비추면 바로 열림) -----

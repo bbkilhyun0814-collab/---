@@ -107,7 +107,7 @@
       const pct = Math.round((doneHere / items.length) * 100);
       const allDone = doneHere === items.length;
       list.insertAdjacentHTML("beforeend", `
-        <section class="level" style="--level-color:${level.color}">
+        <section class="level" id="level-${level.id}" style="--level-color:${level.color}">
           <div class="level-head">
             <div class="level-icon">${level.icon}</div>
             <div class="level-text">
@@ -117,10 +117,10 @@
             <div class="level-count">${doneHere}/${items.length}</div>
           </div>
           <div class="level-bar"><div style="width:${pct}%"></div></div>
-          <div class="level-list" id="level-${level.id}"></div>
+          <div class="level-list" id="level-list-${level.id}"></div>
         </section>
       `);
-      const box = document.getElementById(`level-${level.id}`);
+      const box = document.getElementById(`level-list-${level.id}`);
       items.forEach(lesson => {
         const p = Progress.get(lesson.id);
         let pill;
@@ -142,7 +142,9 @@
       });
     });
     }
-    renderLessons();
+    // 메뉴에서 "기초 단계" 등을 눌러 왔으면 그 단계로 이동 (브라우저 자체 이동 뒤에 실행되도록 살짝 늦춤)
+    renderLessons().then(() => setTimeout(scrollToHash, 150));
+    window.addEventListener("hashchange", scrollToHash);
   </script>
 </body>
 </html>
