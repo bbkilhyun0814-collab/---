@@ -151,7 +151,7 @@
         let pill;
         if (hasTiers(lesson)) {
           // 초급·중급·고급 각각의 상태를 작은 칩으로 표시
-          pill = TIER_LIST.map(t => {
+          pill = lessonTiers(lesson).map(t => {
             const tp = Progress.get(tierKey(lesson.id, t.id));
             const cls = tp.done ? "done" : tp.step > 0 ? "doing" : "";
             return `<span class="tier-chip ${cls}" style="--level-color:${t.color}">${t.name} ${tp.done ? "✅" : tp.step > 0 ? "📖" : ""}</span>`;

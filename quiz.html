@@ -40,7 +40,7 @@
     const key = tierKey(lesson.id, tiered ? tier.id : null);
     const quiz = tier.quiz;
     const tierQ = tiered ? `&tier=${tier.id}` : "";
-    const nextTier = tiered ? TIER_LIST[TIER_LIST.findIndex(t => t.id === tier.id) + 1] : null;
+    const nextTier = tiered ? nextTierOf(lesson, tier.id) : null;
 
     setPageMeta("연습 문제: " + lesson.title + (tiered ? ` (${tier.name})` : "") + " - 스마트폰 AI 배움터", lesson.title + " 강좌에서 배운 내용을 쉬운 문제로 확인해요.", "quiz.html?id=" + lesson.id + tierQ);
     renderTopbar("연습하기: " + lesson.title + (tiered ? " · " + tier.name : ""), { speakText: () => currentText() });

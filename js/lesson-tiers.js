@@ -1,17 +1,21 @@
-/* ===== 기초 강좌의 초급·중급·고급 단계 =====
-   - 초급(beginner)은 lessons-data.js 의 steps/quiz 를 그대로 씁니다.
-   - 중급(middle)·고급(advanced)은 이 파일의 LESSON_TIERS 에 적습니다.
+/* ===== 강좌 안의 단계(초급·중급·고급·심화) =====
+   - 강좌마다 LESSON_TIERS["강좌id"].tiers 에 단계 순서를 적습니다. 예: ["beginner","middle","advanced"]
+   - 첫 단계는 lessons-data.js 의 steps/quiz 를 그대로 씁니다.
+   - 나머지 단계는 이 파일의 LESSON_TIERS["강좌id"]["단계id"] = { steps, quiz } 에 적습니다.
    - 각 걸음(step)에 scene 을 적으면 그 휴대폰 그림을 보여줍니다 (phone-scene.js 의 type 사용). */
 
-const TIER_LIST = [
-  { id: "beginner", name: "초급", icon: "🌱", color: "#4a9d6c", desc: "꼭 알아야 할 기본" },
-  { id: "middle",   name: "중급", icon: "🌿", color: "#e8742c", desc: "자주 쓰는 다음 기능" },
-  { id: "advanced", name: "고급", icon: "🌳", color: "#7a5cc9", desc: "알아두면 편한 기능" }
-];
+const TIER_DEFS = {
+  beginner: { id: "beginner", name: "초급", icon: "🌱", color: "#4a9d6c", desc: "꼭 알아야 할 기본" },
+  middle:   { id: "middle",   name: "중급", icon: "🌿", color: "#e8742c", desc: "자주 쓰는 다음 기능" },
+  advanced: { id: "advanced", name: "고급", icon: "🌳", color: "#7a5cc9", desc: "알아두면 편한 기능" },
+  expert:   { id: "expert",   name: "심화", icon: "🏔️", color: "#2457A6", desc: "한 걸음 더 깊이" }
+};
+const TIER_LIST = [TIER_DEFS.beginner, TIER_DEFS.middle, TIER_DEFS.advanced];   // 기초 강좌 기본 순서
 
 const LESSON_TIERS = {
   // =====================================================================
   "phone-call": {
+    tiers: ["beginner", "middle", "advanced"],
     middle: {
       steps: [
         { visual: "🔢", title: "번호를 직접 눌러 걸어요",
@@ -74,6 +78,7 @@ const LESSON_TIERS = {
 
   // =====================================================================
   "sms-send": {
+    tiers: ["beginner", "middle", "advanced"],
     middle: {
       steps: [
         { visual: "↩️", title: "받은 문자에 답장해요",
@@ -132,6 +137,7 @@ const LESSON_TIERS = {
 
   // =====================================================================
   "settings-basic": {
+    tiers: ["beginner", "middle", "advanced"],
     middle: {
       steps: [
         { visual: "🔆", title: "화면 밝기를 조절해요",
@@ -190,6 +196,7 @@ const LESSON_TIERS = {
 
   // =====================================================================
   "photo-take": {
+    tiers: ["beginner", "middle", "advanced"],
     middle: {
       steps: [
         { visual: "🤳", title: "셀카(내 얼굴)를 찍어요",
@@ -244,6 +251,7 @@ const LESSON_TIERS = {
 
   // =====================================================================
   "photo-view": {
+    tiers: ["beginner", "middle", "advanced"],
     middle: {
       steps: [
         { visual: "📅", title: "날짜별로 사진을 찾아요",
@@ -297,22 +305,347 @@ const LESSON_TIERS = {
   }
 };
 
-// 강좌가 초급·중급·고급으로 나뉘어 있는지
+// 강좌가 여러 단계로 나뉘어 있는지
 function hasTiers(lesson) {
-  return !!(lesson && LESSON_TIERS[lesson.id]);
+  return !!(lesson && LESSON_TIERS[lesson.id] && LESSON_TIERS[lesson.id].tiers);
 }
 
-// 강좌의 한 단계 내용을 돌려줌. tierId 가 없거나 초급이면 강좌 원래 내용(초급).
+// 이 강좌의 단계 목록 (정보 객체 배열). 나뉘지 않은 강좌는 빈 배열.
+function lessonTiers(lesson) {
+  if (!hasTiers(lesson)) return [];
+  return LESSON_TIERS[lesson.id].tiers.map(id => TIER_DEFS[id]);
+}
+
+// 강좌의 한 단계 내용을 돌려줌. tierId 가 없거나 첫 단계면 강좌 원래 내용.
 function getTier(lesson, tierId) {
-  const info = TIER_LIST.find(t => t.id === tierId) || TIER_LIST[0];
-  if (info.id === "beginner" || !hasTiers(lesson)) {
-    return Object.assign({}, info, { steps: lesson.steps, quiz: lesson.quiz });
-  }
+  const list = lessonTiers(lesson);
+  if (!list.length) return Object.assign({}, TIER_DEFS.beginner, { base: true, steps: lesson.steps, quiz: lesson.quiz });
+  const info = list.find(t => t.id === tierId) || list[0];
+  if (info.id === list[0].id) return Object.assign({}, info, { base: true, steps: lesson.steps, quiz: lesson.quiz });
   const t = LESSON_TIERS[lesson.id][info.id];
-  return Object.assign({}, info, { steps: t.steps, quiz: t.quiz });
+  return Object.assign({}, info, { base: false, steps: t.steps, quiz: t.quiz });
 }
 
-// 진도 저장용 열쇠: 초급은 예전처럼 강좌 id 그대로, 중급·고급은 "강좌id:middle" 식으로
-function tierKey(lessonId, tierId) {
-  return (!tierId || tierId === "beginner") ? lessonId : `${lessonId}:${tierId}`;
+// 다음 단계 정보 (마지막이면 null)
+function nextTierOf(lesson, tierId) {
+  const list = lessonTiers(lesson);
+  const i = list.findIndex(t => t.id === tierId);
+  return i >= 0 && i < list.length - 1 ? list[i + 1] : null;
 }
+
+// 진도 저장용 열쇠: 첫 단계는 예전처럼 강좌 id 그대로, 나머지는 "강좌id:단계id"
+function tierKey(lessonId, tierId) {
+  const l = typeof getLesson === "function" ? getLesson(lessonId) : null;
+  const list = l ? lessonTiers(l) : [];
+  const first = list.length ? list[0].id : "beginner";
+  return (!tierId || tierId === first) ? lessonId : `${lessonId}:${tierId}`;
+}
+
+/* ===== 중급 단계 강좌(중급 → 중급+고급), 고급 단계 강좌(고급 → 고급+심화) ===== */
+Object.assign(LESSON_TIERS, {
+  // ---------------------------------------------------------------- 카카오톡 메시지
+  "kakao-message": {
+    tiers: ["middle", "advanced"],
+    advanced: {
+      steps: [
+        { visual: "👨‍👩‍👧‍👦", title: "단체 대화방을 만들어요",
+          text: "카카오톡 '채팅' 화면에서 오른쪽 위 말풍선(+)을 누르고 '일반 채팅'을 고른 뒤 가족 여러 명을 눌러 고르면 모두가 함께 보는 방이 생겨요.",
+          tip: "방 이름을 '우리 가족'처럼 적어두면 찾기 쉬워요.",
+          scene: { type: "list", title: "대화상대 선택", highlight: "multi", names: ["우리 딸 ✓", "우리 아들 ✓", "손주 ✓", "김영희", "이순자", "박철수"] } },
+        { visual: "💾", title: "받은 사진·동영상을 저장해요",
+          text: "대화방에서 받은 사진을 누르면 크게 보여요. 아래쪽 '저장(⬇)' 버튼을 누르면 내 휴대폰 갤러리에 들어가요.",
+          tip: "저장하지 않은 사진은 시간이 지나면 못 볼 수 있어요. 소중한 사진은 바로 저장하세요.",
+          scene: { type: "photo", highlight: "share" } },
+        { visual: "💸", title: "카카오페이로 용돈을 보내요",
+          text: "대화방의 '+' → '송금'을 누르고 금액을 적은 뒤 비밀번호 6자리를 넣으면 손주에게 바로 돈이 가요. 처음에는 은행 계좌를 한 번 연결해야 해요.",
+          tip: "처음 연결은 꼭 가족과 함께 하세요. 모르는 사람이 보내라는 송금은 절대 하지 마세요.",
+          scene: { type: "poster", icon: "💸", lines: ["+ → 송금", "", "금액 적기 → 비밀번호 6자리", "가족에게만!"], bg: "#fff8e1" } },
+        { visual: "🪪", title: "내 프로필 사진과 이름을 바꿔요",
+          text: "'친구' 화면 맨 위 내 이름을 누르고 '프로필 편집'을 누르세요. 카메라 그림을 누르면 사진을, 연필을 누르면 이름을 바꿀 수 있어요.",
+          tip: "손주가 알아볼 수 있는 사진으로 해두면 좋아요.",
+          scene: { type: "list", title: "친구", tabs: true, highlight: "search" } },
+        { visual: "🏘️", title: "오픈채팅으로 모임에 들어가요",
+          text: "아래 '오픈채팅'을 누르고 돋보기에 '시니어 등산', '우리 동네'처럼 적으면 같은 관심사 모임이 나와요. 방을 누르고 '참여'를 누르면 들어가요.",
+          tip: "오픈채팅은 모르는 사람도 있어요. 주소·계좌·주민번호는 절대 적지 마세요.",
+          scene: { type: "list", title: "오픈채팅", tabs: true, highlight: "tab" } }
+      ],
+      quiz: [
+        { q: "가족 여러 명이 함께 보는 방을 만들려면?", choices: ["말풍선(+)에서 여러 명을 고른다", "한 명씩 따로 보낸다", "전화를 건다"], answer: 0 },
+        { q: "카카오페이 송금에서 절대 하면 안 되는 것은?", choices: ["가족에게 용돈 보내기", "모르는 사람이 시키는 송금", "비밀번호 6자리 넣기"], answer: 1 },
+        { q: "오픈채팅에서 적으면 안 되는 것은?", choices: ["인사말", "등산 약속", "계좌번호·주민번호"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- 카카오톡 사진
+  "kakao-photo": {
+    tiers: ["middle", "advanced"],
+    advanced: {
+      steps: [
+        { visual: "🗂️", title: "사진 여러 장을 묶어서 보내요",
+          text: "'앨범'에서 사진을 여러 장 누르면 번호가 붙어요. 아래 '묶어서 보내기'를 켜고 전송하면 한 묶음으로 깔끔하게 가요.",
+          tip: "한 번에 30장까지 보낼 수 있어요.",
+          scene: { type: "picker", highlight: "select" } },
+        { visual: "🔍", title: "원본 화질로 보내요",
+          text: "사진을 고른 뒤 아래 '원본'을 켜고 보내면 흐려지지 않고 선명하게 가요. 인쇄할 사진은 꼭 원본으로 보내세요.",
+          tip: "원본은 용량이 커서 와이파이에서 보내는 게 좋아요.",
+          scene: { type: "picker", highlight: "send" } },
+        { visual: "🎬", title: "동영상을 보내요",
+          text: "'앨범'에서 동영상(▶ 표시)을 고르고 전송하면 돼요. 긴 영상은 보내는 데 시간이 걸리니 끝날 때까지 기다리세요.",
+          tip: "5분이 넘는 영상은 잘려서 갈 수 있어요. 짧게 나눠 보내세요.",
+          scene: { type: "chat", highlight: "album" } },
+        { visual: "✏️", title: "보내기 전에 사진을 꾸며요",
+          text: "사진을 고른 뒤 '편집'을 누르면 글자 쓰기, 스티커, 그리기가 나와요. '생일 축하해'라고 적어 보내면 더 정겨워요.",
+          tip: "글자는 크게, 색은 진하게 하면 잘 보여요.",
+          scene: { type: "photo", highlight: "edit" } },
+        { visual: "🎁", title: "선물하기로 마음을 보내요",
+          text: "대화방 '+' → '선물하기'에서 커피나 케이크를 고르고 결제하면 상대에게 선물 쿠폰이 가요. 받은 선물은 가게에서 바코드를 보여주면 돼요.",
+          tip: "결제는 가족과 함께 처음 한 번 해보세요. 모르는 사람의 선물 링크는 누르지 마세요.",
+          scene: { type: "poster", icon: "🎁", lines: ["+ → 선물하기", "", "커피·케이크 고르기", "받은 선물은 바코드 보여주기"], bg: "#fff0f5" } }
+      ],
+      quiz: [
+        { q: "사진을 선명하게 보내려면?", choices: ["'원본'을 켜고 보낸다", "사진을 작게 자른다", "문자로 보낸다"], answer: 0 },
+        { q: "긴 동영상을 보낼 때는?", choices: ["한 번에 한 시간짜리를 보낸다", "짧게 나눠서 보낸다", "사진으로 찍어 보낸다"], answer: 1 },
+        { q: "받은 선물 쿠폰은 어떻게 쓰나요?", choices: ["인쇄해서 우편으로 보낸다", "전화로 번호를 불러준다", "가게에서 바코드를 보여준다"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- 유튜브 보기
+  "youtube": {
+    tiers: ["middle", "advanced"],
+    advanced: {
+      steps: [
+        { visual: "📋", title: "재생목록을 만들어 노래를 모아요",
+          text: "영상 아래 '저장'을 누르고 '새 재생목록'에 '내 애창곡'처럼 이름을 적으세요. 다음부터는 '저장' → '내 애창곡'만 누르면 모여요.",
+          tip: "모아둔 노래는 아래 '내 페이지' → 재생목록에서 한 번에 이어 들을 수 있어요.",
+          scene: { type: "video", highlight: "like" } },
+        { visual: "🕘", title: "봤던 영상을 다시 찾아요",
+          text: "아래 '내 페이지'를 누르면 '시청 기록'이 나와요. 어제 본 영상이 순서대로 있어서 이름을 몰라도 다시 찾을 수 있어요.",
+          tip: "너무 많으면 돋보기에 기억나는 말 한두 개만 적어도 찾아줘요.",
+          scene: { type: "video", highlight: "subtab" } },
+        { visual: "💬", title: "자막과 재생 속도를 바꿔요",
+          text: "영상 오른쪽 위 톱니바퀴(⚙️)를 누르면 '자막'과 '재생 속도'가 있어요. 자막을 켜면 말이 글자로 나오고, 속도를 0.75로 하면 천천히 말해요.",
+          tip: "외국 영상도 '자동 번역'으로 한국어 자막을 볼 수 있어요.",
+          scene: { type: "poster", icon: "⚙️", lines: ["영상 오른쪽 위 ⚙️", "", "자막 켜기", "재생 속도 0.75 = 천천히"] } },
+        { visual: "💳", title: "유튜브 프리미엄, 결제는 조심해요",
+          text: "'프리미엄'은 매달 돈을 내면 광고가 없어지는 서비스예요. '무료 체험' 버튼을 누르면 한 달 뒤부터 저절로 돈이 빠져나가니 가족과 상의하고 누르세요.",
+          tip: "이미 눌렀다면 설정 → '구매 및 멤버십'에서 해지할 수 있어요.",
+          scene: { type: "poster", icon: "💳", lines: ["'무료 체험' = 한 달 뒤 자동 결제", "", "가족과 상의하고 누르기", "해지: 설정 → 구매 및 멤버십"], bg: "#fff0f0" } },
+        { visual: "📺", title: "TV로 크게 봐요",
+          text: "집 TV가 인터넷에 연결된 스마트 TV라면, 영상 위쪽의 '전송(📡)' 버튼을 누르고 TV 이름을 고르면 TV에서 크게 나와요.",
+          tip: "휴대폰과 TV가 같은 와이파이에 있어야 해요.",
+          scene: { type: "video", highlight: "full" } }
+      ],
+      quiz: [
+        { q: "좋아하는 노래를 모아두려면?", choices: ["'저장'으로 재생목록에 넣는다", "매번 다시 검색한다", "사진을 찍는다"], answer: 0 },
+        { q: "'무료 체험' 버튼을 누르면?", choices: ["영원히 무료다", "한 달 뒤부터 자동으로 돈이 나간다", "휴대폰이 꺼진다"], answer: 1 },
+        { q: "어제 본 영상을 다시 보려면?", choices: ["휴대폰을 끈다", "새로 가입한다", "내 페이지 → 시청 기록"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- 유튜브 말로 찾기
+  "youtube-voice": {
+    tiers: ["middle", "advanced"],
+    advanced: {
+      steps: [
+        { visual: "💭", title: "댓글을 보고 써요",
+          text: "영상 아래 '댓글'을 누르면 다른 사람들 글이 나와요. 맨 위 칸을 누르고 '잘 들었습니다'처럼 적은 뒤 보내기(➤)를 누르면 내 글이 올라가요.",
+          tip: "댓글은 누구나 볼 수 있어요. 전화번호나 주소는 적지 마세요.",
+          scene: { type: "video", highlight: "like" } },
+        { visual: "📱", title: "쇼츠(짧은 영상)를 봐요",
+          text: "아래 '쇼츠'를 누르면 1분짜리 짧은 영상이 나와요. 손가락으로 위로 쓸어 올리면 다음 영상이 나와요.",
+          tip: "재미있지만 시간이 금방 가요. 한 번에 10개쯤 보고 쉬세요.",
+          scene: { type: "video", highlight: "subtab" } },
+        { visual: "⬆️", title: "손주 영상을 올려요",
+          text: "아래 가운데 '+'를 누르고 '동영상 업로드'에서 갤러리 영상을 고르세요. 제목을 적고 '비공개' 또는 '일부 공개'로 하면 가족만 볼 수 있어요.",
+          tip: "'공개'로 올리면 온 세상 사람이 봐요. 가족 영상은 꼭 '비공개'로 하세요.",
+          scene: { type: "poster", icon: "⬆️", lines: ["아래 '+' → 동영상 업로드", "", "제목 적기", "공개 범위: 비공개!"] } },
+        { visual: "📥", title: "영상을 저장해 두고 인터넷 없이 봐요",
+          text: "영상 아래 '오프라인 저장'을 누르면 휴대폰에 내려받아져요. 기차나 시골처럼 인터넷이 안 되는 곳에서도 '내 페이지' → '오프라인 저장'에서 볼 수 있어요.",
+          tip: "이 기능은 프리미엄 가입자만 돼요. 아니면 와이파이에서 미리 보세요.",
+          scene: { type: "video", highlight: "subtab" } },
+        { visual: "🎧", title: "유튜브 뮤직으로 노래만 들어요",
+          text: "'YouTube Music' 앱을 설치하면 화면을 꺼도 노래가 계속 나와요. 돋보기에 가수 이름을 적거나 마이크로 말하면 노래가 쭉 이어져요.",
+          tip: "산책할 때 이어폰을 끼고 들으면 좋아요. 길에서는 소리를 작게 하세요.",
+          scene: { type: "search", highlight: "mic" } }
+      ],
+      quiz: [
+        { q: "댓글에 적으면 안 되는 것은?", choices: ["전화번호와 주소", "'잘 들었습니다'", "노래 제목"], answer: 0 },
+        { q: "가족 영상을 올릴 때 공개 범위는?", choices: ["공개", "비공개 또는 일부 공개", "아무거나"], answer: 1 },
+        { q: "화면을 꺼도 노래가 계속 나오게 하려면?", choices: ["휴대폰을 뒤집는다", "소리를 키운다", "유튜브 뮤직 앱을 쓴다"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- 사기 피하기
+  "safety-smishing": {
+    tiers: ["middle", "advanced"],
+    advanced: {
+      steps: [
+        { visual: "🛑", title: "원격조종 앱 설치는 무조건 거절해요",
+          text: "'검찰', '은행', '고객센터'라며 전화해서 '앱을 설치하라', '화면을 보여달라'고 하면 100% 사기예요. 설치하면 휴대폰을 통째로 빼앗겨요. 바로 끊으세요.",
+          tip: "진짜 은행·검찰은 절대 앱 설치를 시키지 않아요.",
+          scene: { type: "scam", from: "02-XXXX-0000", lines: ["[OO은행] 보안 강화를 위해", "아래 앱을 설치하세요.", "원격지원 앱 받기:", "http://bit.ly/secure-app"], highlight: "link" } },
+        { visual: "🔎", title: "모르는 번호를 조회해요",
+          text: "'후후'나 '더콜' 같은 앱을 설치하면 모르는 번호로 전화가 올 때 '스팸', '대출 광고'처럼 미리 알려줘요. 경찰청 '사이버캅' 앱에서는 번호와 계좌가 신고된 적 있는지 볼 수 있어요.",
+          tip: "앱은 꼭 '플레이 스토어'나 '앱 스토어'에서만 설치하세요.",
+          scene: { type: "poster", icon: "🔎", lines: ["후후 · 더콜: 누가 거는지 표시", "사이버캅: 신고된 번호 조회", "", "앱은 스토어에서만!"] } },
+        { visual: "🛡️", title: "휴대폰에 스팸 차단을 켜요",
+          text: "전화 앱 '설정' → '스팸 및 사기 전화 차단'을 켜세요. 문자 앱도 '설정' → '스팸 필터'를 켜면 광고 문자가 따로 모여요.",
+          tip: "통신사(SKT·KT·LG) 고객센터 114에 전화해 '스팸 차단 서비스'를 요청해도 돼요. 무료예요.",
+          scene: { type: "settings", highlight: "sound" } },
+        { visual: "🚨", title: "당했다면 바로 신고하고 돈을 멈춰요",
+          text: "돈을 보냈다면 1분이 급해요. ① 112에 전화해 '보이스피싱 지급정지' 요청, ② 돈을 보낸 은행 고객센터에 전화해 '지급정지', ③ 금융감독원 1332에 신고하세요.",
+          tip: "빨리 신고하면 상대 계좌가 묶여서 돈을 돌려받을 수 있어요. 부끄러워 말고 바로 하세요.",
+          scene: { type: "poster", icon: "🚨", lines: ["① 112 지급정지", "② 은행 고객센터 지급정지", "③ 금감원 1332 신고", "1분이 급해요!"], bg: "#fff0f0" } },
+        { visual: "🔐", title: "내 이름으로 대출 못 하게 막아요",
+          text: "'엠세이퍼(msafer.or.kr)'에서 내 이름으로 몰래 개통된 휴대폰이 있는지 보고, 은행 앱이나 창구에서 '여신거래 안심차단'을 신청하면 내 이름으로 대출을 아예 못 받게 돼요.",
+          tip: "가족과 함께 은행에 가서 '안심차단 신청하러 왔어요'라고 하면 바로 해줘요. 필요할 때 다시 풀 수 있어요.",
+          scene: { type: "poster", icon: "🔐", lines: ["엠세이퍼: 몰래 개통 확인", "여신거래 안심차단:", "내 이름 대출 원천 봉쇄", "", "은행 창구에서 신청"] } }
+      ],
+      quiz: [
+        { q: "전화로 '보안 앱을 설치하라'고 하면?", choices: ["바로 끊는다", "시키는 대로 설치한다", "화면을 보여준다"], answer: 0 },
+        { q: "사기로 돈을 보냈을 때 가장 먼저 할 일은?", choices: ["며칠 기다려 본다", "112와 은행에 지급정지를 요청한다", "상대에게 다시 전화한다"], answer: 1 },
+        { q: "내 이름으로 대출을 못 하게 막는 서비스는?", choices: ["유튜브 프리미엄", "카카오페이", "여신거래 안심차단"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- AI 말로 묻기
+  "ai-chat": {
+    tiers: ["advanced", "expert"],
+    expert: {
+      steps: [
+        { visual: "🔁", title: "이어서 꼬리 질문을 해요",
+          text: "AI가 답하면 '더 쉽게 말해줘', '예를 들어줘', '그중에 하나만 골라줘'처럼 이어서 물어보세요. 앞 대화를 기억하고 있어서 처음부터 다시 말할 필요가 없어요.",
+          tip: "마음에 안 들면 '다시 답해줘'라고 해도 돼요.",
+          scene: { type: "ai", highlight: "retry" } },
+        { visual: "🎙️", title: "음성 대화 모드로 말을 주고받아요",
+          text: "AI 앱 오른쪽 아래 소리 파동(🎙️) 버튼을 누르면 사람과 전화하듯 말로 주고받아요. 말하면 AI가 바로 목소리로 답하고, 끼어들어 다시 물어도 돼요.",
+          tip: "글 읽기가 힘들 때 가장 편해요. 끝낼 때는 ✕를 누르세요.",
+          scene: { type: "ai", highlight: "mic" } },
+        { visual: "🤔", title: "AI도 틀릴 수 있어요",
+          text: "AI는 가끔 그럴듯하게 틀린 말을 해요. 약·돈·법처럼 중요한 건 '출처가 어디야?'라고 묻고, 병원·은행·주민센터에 꼭 한 번 더 확인하세요.",
+          tip: "최근 소식(오늘 날씨, 어제 뉴스)은 틀릴 때가 많아요. 그건 포털 검색이 더 정확해요.",
+          scene: { type: "poster", icon: "🤔", lines: ["AI 답 = 참고용", "", "약·돈·법은", "전문가에게 다시 확인"], bg: "#fff8e1" } },
+        { visual: "📚", title: "지난 대화를 다시 찾아요",
+          text: "왼쪽 위 줄 세 개(≡)를 누르면 지난 대화 목록이 나와요. 대화 제목을 누르면 그때 내용이 그대로 보이고 이어서 물어볼 수도 있어요.",
+          tip: "새 주제는 '새 대화'를 눌러 시작하면 섞이지 않아요.",
+          scene: { type: "poster", icon: "≡", lines: ["왼쪽 위 ≡ 누르기", "", "지난 대화 목록", "'새 대화'로 새 주제"] } },
+        { visual: "🤖", title: "다른 AI도 써 봐요",
+          text: "챗GPT 말고도 구글 '제미나이', 카카오톡 안의 '카나나', 네이버 '클로바X'가 있어요. 같은 질문을 두 곳에 해보고 답이 같은지 비교하면 더 믿을 수 있어요.",
+          tip: "어느 것이든 쓰는 법은 똑같아요. 마이크 누르고 말하면 돼요.",
+          scene: { type: "home", apps: [["🤖", "ChatGPT"], ["✨", "제미나이"], ["💛", "카카오톡"], ["🟢", "클로바X"], ["🌐", "인터넷"], ["⚙️", "설정"]], highlight: "제미나이" } }
+      ],
+      quiz: [
+        { q: "AI 답이 어려울 때는?", choices: ["'더 쉽게 말해줘'라고 이어서 묻는다", "앱을 지운다", "포기한다"], answer: 0 },
+        { q: "AI가 알려준 약 복용법은?", choices: ["무조건 믿는다", "의사·약사에게 다시 확인한다", "가족에게만 말한다"], answer: 1 },
+        { q: "지난 대화를 다시 보려면?", choices: ["휴대폰을 끈다", "새로 가입한다", "왼쪽 위 ≡를 누른다"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- AI 글쓰기
+  "ai-write": {
+    tiers: ["advanced", "expert"],
+    expert: {
+      steps: [
+        { visual: "✂️", title: "'더 짧게', '더 정중하게' 고쳐 달라고 해요",
+          text: "AI가 쓴 글이 길면 '세 줄로 줄여줘', 딱딱하면 '더 따뜻하게', 가벼우면 '더 정중하게'라고 말하세요. 몇 번이고 고쳐줘요.",
+          tip: "'손주한테 보내는 거야'처럼 받는 사람을 말해주면 말투를 알아서 맞춰요.",
+          scene: { type: "ai", highlight: "retry" } },
+        { visual: "🕊️", title: "경조사 문자를 써요",
+          text: "'친구 부친상에 보낼 조문 문자 써줘', '손녀 대학 합격 축하 문자 써줘'라고 하면 격식에 맞는 글이 나와요. 이름만 바꿔서 보내면 돼요.",
+          tip: "조문 문자는 짧고 정중하게. AI에게 '세 줄 이내로'라고 덧붙이세요.",
+          scene: { type: "chat", theme: "sms", myText: "삼가 고인의 명복을 빕니다.", highlight: "send" } },
+        { visual: "📝", title: "민원·항의 편지를 정리해요",
+          text: "'아파트 윗집 소음 때문에 관리사무소에 낼 민원 글 써줘. 밤 11시 이후 쿵쿵 소리, 3주째'처럼 사실을 말하면 조리 있는 글로 정리해줘요.",
+          tip: "날짜·횟수·장소를 말해주면 훨씬 설득력 있는 글이 돼요.",
+          scene: { type: "ai", highlight: "copy" } },
+        { visual: "📊", title: "표나 목록으로 정리해 달라고 해요",
+          text: "'내 약 복용 시간을 아침·점심·저녁 표로 정리해줘', '제주도 2박 3일 일정 목록으로 써줘'라고 하면 보기 좋게 정리해줘요. 복사해서 메모장에 붙여 두세요.",
+          tip: "표는 캡처(전원+소리줄이기)해서 갤러리에 두면 언제든 봐요.",
+          scene: { type: "poster", icon: "📊", lines: ["'표로 정리해줘'", "", "아침 │ 혈압약 1알", "점심 │ 당뇨약 1알", "저녁 │ 혈압약 1알"] } },
+        { visual: "🎨", title: "AI로 그림을 만들어 카드를 보내요",
+          text: "AI에게 '손주 생일 축하 카드 그림 만들어줘. 케이크와 풍선, 밝은 색'이라고 하면 그림을 만들어줘요. 저장(⬇)한 뒤 카카오톡으로 보내세요.",
+          tip: "'한글 글씨는 넣지 마'라고 하세요. AI는 아직 한글 글씨를 틀리게 그릴 때가 있어요.",
+          scene: { type: "poster", icon: "🎨", lines: ["'생일 카드 그림 만들어줘'", "", "🎂🎈 그림 생성", "저장 → 카카오톡으로"], bg: "#fff0f5" } }
+      ],
+      quiz: [
+        { q: "AI가 쓴 글이 너무 길면?", choices: ["'세 줄로 줄여줘'라고 한다", "그냥 보낸다", "직접 다시 쓴다"], answer: 0 },
+        { q: "민원 글을 잘 쓰게 하려면?", choices: ["'알아서 써줘'만 한다", "날짜·횟수·장소를 말해준다", "큰 소리로 말한다"], answer: 1 },
+        { q: "AI 그림에 한글 글씨를 넣으면?", choices: ["항상 완벽하다", "그림이 안 나온다", "틀리게 그릴 수 있어서 빼는 게 좋다"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- AI 사진
+  "ai-photo": {
+    tiers: ["advanced", "expert"],
+    expert: {
+      steps: [
+        { visual: "🌐", title: "외국어 안내문을 번역해요",
+          text: "영어 약 설명서나 외국 식당 메뉴를 찍고 '한국어로 번역해줘'라고 하면 바로 우리말로 읽어줘요. 손주가 보내온 외국 사진의 글자도 돼요.",
+          tip: "글자가 작으면 가까이서 또렷하게 찍으세요.",
+          scene: { type: "ai", highlight: "speaker" } },
+        { visual: "🌿", title: "식물·곤충 이름을 물어봐요",
+          text: "산책길 꽃이나 텃밭 벌레를 찍고 '이게 뭐야? 독 있어?'라고 물으면 이름과 특징을 알려줘요.",
+          tip: "먹어도 되는지는 AI 말만 믿지 말고 꼭 전문가에게 확인하세요. 버섯은 특히요.",
+          scene: { type: "camera", highlight: "focus" } },
+        { visual: "🧾", title: "고지서·영수증을 읽어 달라고 해요",
+          text: "전기요금 고지서나 병원 영수증을 찍고 '얼마 내야 해? 언제까지?'라고 물으면 핵심만 골라 큰 글씨로 설명해줘요.",
+          tip: "'지난달보다 왜 많이 나왔어?'처럼 이어서 물어도 돼요.",
+          scene: { type: "poster", icon: "🧾", lines: ["고지서 찍기", "", "'얼마? 언제까지?'", "핵심만 쉽게 설명"] } },
+        { visual: "🕵️", title: "가짜 사진인지 물어봐요",
+          text: "'손주가 사고 났다'며 온 사진, 유명인이 광고하는 사진이 이상하면 AI에게 '이 사진 AI로 만든 것 같아?'라고 물어보세요. 손가락·글씨·그림자가 이상하면 가짜예요.",
+          tip: "AI도 100% 못 맞혀요. 의심되면 본인에게 직접 전화해 확인하는 게 제일 확실해요.",
+          scene: { type: "poster", icon: "🕵️", lines: ["'이 사진 가짜야?'", "", "손가락·글씨·그림자 확인", "의심되면 직접 전화!"], bg: "#fff0f0" } },
+        { visual: "🪄", title: "AI로 사진을 고치고 영상을 만들어요",
+          text: "갤러리의 'AI 지우개'로 사진 속 지나가는 사람을 지우거나, AI 앱에서 '이 사진 배경을 바다로 바꿔줘'라고 할 수 있어요. '이 사진으로 5초 영상 만들어줘'도 돼요.",
+          tip: "고친 사진은 따로 저장되니 원본은 그대로 남아요. 마음껏 해보세요.",
+          scene: { type: "photo", highlight: "edit" } }
+      ],
+      quiz: [
+        { q: "영어 설명서를 읽으려면?", choices: ["찍어서 '한국어로 번역해줘'라고 한다", "사전을 산다", "포기한다"], answer: 0 },
+        { q: "AI가 '먹어도 되는 버섯'이라고 하면?", choices: ["바로 먹는다", "전문가에게 다시 확인한다", "사진을 지운다"], answer: 1 },
+        { q: "'손주가 사고 났다'는 사진이 오면 제일 확실한 방법은?", choices: ["돈을 보낸다", "사진을 저장한다", "손주에게 직접 전화한다"], answer: 2 }
+      ]
+    }
+  },
+
+  // ---------------------------------------------------------------- 영상통화
+  "kakao-videocall": {
+    tiers: ["advanced", "expert"],
+    expert: {
+      steps: [
+        { visual: "👨‍👩‍👧‍👦", title: "여러 명과 그룹 영상통화를 해요",
+          text: "가족 단체 대화방에서 전화기 그림을 누르고 '페이스톡'을 고르면 방에 있는 모두에게 전화가 가요. 받는 사람 얼굴이 화면에 나란히 나와요.",
+          tip: "명절에 흩어진 가족이 한 화면에서 얼굴을 볼 수 있어요. 최대 10명까지요.",
+          scene: { type: "videocall", highlight: "menu" } },
+        { visual: "📲", title: "통화 중 내 화면을 보여줘요",
+          text: "영상통화 중 아래 '화면 공유'를 누르면 내가 보는 휴대폰 화면이 상대에게 그대로 보여요. '이 버튼이 뭐야?' 하고 물어볼 때 편해요.",
+          tip: "은행 앱처럼 비밀번호가 보이는 화면은 공유하지 마세요.",
+          scene: { type: "videocall", highlight: "self" } },
+        { visual: "🎭", title: "얼굴 꾸미기 필터를 끄고 켜요",
+          text: "영상통화 중 얼굴에 토끼 귀가 생기거나 피부가 뽀얗게 보이면 '필터'가 켜진 거예요. 화면을 한 번 누르고 '필터' → '없음'을 고르면 원래 얼굴로 돌아와요.",
+          tip: "손주와 놀 때는 필터를 켜보세요. 재미있어해요.",
+          scene: { type: "videocall", highlight: "self" } },
+        { visual: "📞", title: "보이스톡으로 소리만 통화해요",
+          text: "전화기 그림에서 '보이스톡'을 고르면 얼굴 없이 소리만 통화해요. 일반 전화와 달리 요금이 안 나가고, 외국에 있는 가족과도 공짜예요.",
+          tip: "머리를 안 했을 때, 외국 가족과 통화할 때 보이스톡이 좋아요.",
+          scene: { type: "videocall", highlight: "menu" } },
+        { visual: "📶", title: "와이파이와 데이터, 뭐가 다른가요?",
+          text: "집 와이파이(📶)에 연결되어 있으면 영상통화를 아무리 해도 요금이 안 나와요. 밖에서는 '데이터'를 쓰는데 영상통화 1시간에 데이터가 많이 들어요.",
+          tip: "화면 맨 위에 📶 부채꼴이 있으면 와이파이, 'LTE·5G'가 있으면 데이터예요. 긴 영상통화는 집에서 하세요.",
+          scene: { type: "poster", icon: "📶", lines: ["📶 와이파이 = 공짜", "LTE · 5G = 데이터 소모", "", "긴 영상통화는 집에서"] } }
+      ],
+      quiz: [
+        { q: "흩어진 가족과 한 화면에서 얼굴을 보려면?", choices: ["단체 대화방에서 페이스톡을 건다", "한 명씩 번갈아 전화한다", "사진을 보낸다"], answer: 0 },
+        { q: "화면 공유 중 보여주면 안 되는 것은?", choices: ["사진 앱", "은행 앱 비밀번호 화면", "유튜브"], answer: 1 },
+        { q: "요금 걱정 없이 긴 영상통화를 하려면?", choices: ["밤에 한다", "소리를 줄인다", "집 와이파이에서 한다"], answer: 2 }
+      ]
+    }
+  }
+});

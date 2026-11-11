@@ -37,7 +37,7 @@
     </div>
 
     <button class="btn btn-outline" style="margin-top:14px" onclick="speakStep()">🔊 이 단계 읽어주기</button>
-    <button class="btn btn-gray" id="tierBackBtn" style="margin-top:12px;display:none" onclick="location.href='lesson.html?id='+lesson.id">↩ 초급·중급·고급 고르기</button>
+    <button class="btn btn-gray" id="tierBackBtn" style="margin-top:12px;display:none" onclick="location.href='lesson.html?id='+lesson.id">↩ 다른 단계 고르기</button>
     </div>
   </main>
 
@@ -72,7 +72,7 @@
     renderTopbar(lesson.title + (tiered && tierId ? " · " + tier.name : ""), { speakText: () => (tiered && !tierId) ? pickerText() : stepText() });
 
     function pickerText() {
-      return `${lesson.title}. 초급, 중급, 고급 중에서 배울 단계를 골라 주세요. ` + TIER_LIST.map(t => `${t.name}은 ${t.desc}.`).join(" ");
+      return `. ` + lessonTiers(lesson).map(t => t.name).join(", ") + ` 중에서 배울 단계를 골라 주세요. ` + lessonTiers(lesson).map(t => `${t.name}은 ${t.desc}.`).join(" ");
     }
 
     // ----- 단계 고르는 화면 -----
@@ -86,7 +86,7 @@
           <p class="step-title">${lesson.title}</p>
           <p class="step-text">어느 단계부터 배울까요? 아무 단계나 눌러도 돼요.</p>
         </div>
-        ${TIER_LIST.map(t => {
+        ${lessonTiers(lesson).map(t => {
           const tt = getTier(lesson, t.id);
           const p = Progress.get(tierKey(lesson.id, t.id));
           let status;
@@ -126,7 +126,7 @@
       document.getElementById("stepIndicator").textContent = `${total}단계 중 ${current + 1}단계`;
       document.getElementById("stepBarFill").style.width = `${((current + 1) / total) * 100}%`;
       // 그림: 실제 사진 > 휴대폰 화면 그림 > 이모지 순서로 표시 (단계별 걸음에 scene 이 있으면 그것을 씀)
-      const scene = s.scene || (tier.id === "beginner" ? getScene(lesson.id, current) : null);
+      const scene = s.scene || (tier.base ? getScene(lesson.id, current) : null);
       let visualHtml = `<div class="step-visual">${s.visual}</div>`;
       if (scene && scene.image) {
         visualHtml = `<div class="step-image"><img src="${scene.image}" alt="${s.title}"></div>`;
