@@ -314,3 +314,17 @@ function showQrModal() {
 }
 
 document.addEventListener("DOMContentLoaded", () => FontSize.apply());
+
+// ----- 검색엔진·미리보기용 제목/설명 바꾸기 (강좌처럼 내용이 주소에 따라 달라지는 화면에서 사용) -----
+function setPageMeta(title, description, path) {
+  document.title = title;
+  const set = (sel, attr, val) => { const el = document.querySelector(sel); if (el) el.setAttribute(attr, val); };
+  set('meta[name="description"]', "content", description);
+  set('meta[property="og:title"]', "content", title);
+  set('meta[property="og:description"]', "content", description);
+  if (path) {
+    const url = location.origin + "/" + path;
+    set('link[rel="canonical"]', "href", url);
+    set('meta[property="og:url"]', "content", url);
+  }
+}

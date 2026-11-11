@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>연습하기 - 스마트폰 AI 배움터</title>
+  <title>연습 문제 - 스마트폰 AI 배움터</title>
+  <meta name="description" content="강좌에서 배운 내용을 쉬운 문제로 확인해 보세요.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://silver-ai-school.onrender.com/quiz.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="어르신을 위한 스마트폰 AI 배움터">
+  <meta property="og:title" content="연습 문제 - 스마트폰 AI 배움터">
+  <meta property="og:description" content="강좌에서 배운 내용을 쉬운 문제로 확인해 보세요.">
+  <meta property="og:url" content="https://silver-ai-school.onrender.com/quiz.html">
+  <meta property="og:image" content="https://silver-ai-school.onrender.com/images/og.png">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary_large_image">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -22,6 +33,7 @@
     const lesson = getLesson(getParam("id"));
     if (!lesson) location.href = "index.html";
 
+    setPageMeta("연습 문제: " + lesson.title + " - 스마트폰 AI 배움터", lesson.title + " 강좌에서 배운 내용을 쉬운 문제로 확인해요.", "quiz.html?id=" + lesson.id);
     renderTopbar("연습하기: " + lesson.title, { speakText: () => currentText() });
 
     let qi = 0, score = 0, answered = false;
