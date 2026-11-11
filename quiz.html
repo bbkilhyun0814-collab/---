@@ -29,27 +29,36 @@
 
   <script src="js/common.js"></script>
   <script src="js/lessons-data.js"></script>
+  <script src="js/lesson-tiers.js"></script>
   <script>
     const lesson = getLesson(getParam("id"));
     if (!lesson) location.href = "index.html";
 
-    setPageMeta("연습 문제: " + lesson.title + " - 스마트폰 AI 배움터", lesson.title + " 강좌에서 배운 내용을 쉬운 문제로 확인해요.", "quiz.html?id=" + lesson.id);
-    renderTopbar("연습하기: " + lesson.title, { speakText: () => currentText() });
+    // 초급·중급·고급으로 나뉜 강좌는 그 단계의 문제를 냄
+    const tiered = hasTiers(lesson);
+    const tier = getTier(lesson, getParam("tier"));
+    const key = tierKey(lesson.id, tiered ? tier.id : null);
+    const quiz = tier.quiz;
+    const tierQ = tiered ? `&tier=${tier.id}` : "";
+    const nextTier = tiered ? TIER_LIST[TIER_LIST.findIndex(t => t.id === tier.id) + 1] : null;
+
+    setPageMeta("연습 문제: " + lesson.title + (tiered ? ` (${tier.name})` : "") + " - 스마트폰 AI 배움터", lesson.title + " 강좌에서 배운 내용을 쉬운 문제로 확인해요.", "quiz.html?id=" + lesson.id + tierQ);
+    renderTopbar("연습하기: " + lesson.title + (tiered ? " · " + tier.name : ""), { speakText: () => currentText() });
 
     let qi = 0, score = 0, answered = false;
     const area = document.getElementById("quizArea");
 
     function currentText() {
-      if (qi >= lesson.quiz.length) return `연습 끝. ${lesson.quiz.length}문제 중 ${score}문제를 맞혔어요.`;
-      const q = lesson.quiz[qi];
+      if (qi >= quiz.length) return `연습 끝. ${quiz.length}문제 중 ${score}문제를 맞혔어요.`;
+      const q = quiz[qi];
       return `문제 ${qi + 1}. ${q.q} ` + q.choices.map((c, i) => `${i + 1}번. ${c}.`).join(" ");
     }
 
     function render() {
       answered = false;
-      const total = lesson.quiz.length;
+      const total = quiz.length;
       if (qi >= total) return renderResult();
-      const q = lesson.quiz[qi];
+      const q = quiz[qi];
       document.getElementById("qIndicator").textContent = `${total}문제 중 ${qi + 1}번`;
       document.getElementById("qBarFill").style.width = `${(qi / total) * 100}%`;
       area.innerHTML = `
@@ -69,7 +78,7 @@
     function choose(i) {
       if (answered) return;
       answered = true;
-      const q = lesson.quiz[qi];
+      const q = quiz[qi];
       const buttons = area.querySelectorAll(".choice");
       buttons.forEach(b => b.disabled = true);
       const fb = document.getElementById("feedback");
@@ -88,12 +97,12 @@
       }
       const nextBtn = document.getElementById("nextQ");
       nextBtn.style.display = "flex";
-      if (qi === lesson.quiz.length - 1) nextBtn.textContent = "결과 보기 ▶";
+      if (qi === quiz.length - 1) nextBtn.textContent = "결과 보기 ▶";
     }
 
     function renderResult() {
-      const total = lesson.quiz.length;
-      Progress.setQuizScore(lesson.id, score, total);
+      const total = quiz.length;
+      Progress.setQuizScore(key, score, total);
       document.getElementById("qIndicator").textContent = "연습 끝!";
       document.getElementById("qBarFill").style.width = "100%";
       const perfect = score === total;
@@ -103,8 +112,9 @@
           <p class="step-title">${perfect ? "완벽해요!" : "수고하셨어요!"}</p>
           <p class="step-text">${total}문제 중 <strong>${score}문제</strong>를 맞히셨어요.</p>
           <p class="sub">${perfect ? "이제 직접 해보셔도 충분해요." : "헷갈리는 부분은 강좌를 다시 한 번 보세요."}</p>
-          <button class="btn btn-primary" style="margin-top:20px" onclick="location.href='index.html'">🏠 처음 화면으로</button>
-          <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='lesson.html?id=${lesson.id}'">📖 강좌 다시 보기</button>
+          ${nextTier ? `<button class="btn btn-green" style="margin-top:20px" onclick="location.href='lesson.html?id=${lesson.id}&tier=${nextTier.id}'">${nextTier.icon} ${nextTier.name} 단계로 가기 ▶</button>` : ""}
+          <button class="btn btn-primary" style="margin-top:12px" onclick="location.href='index.html'">🏠 처음 화면으로</button>
+          <button class="btn btn-outline" style="margin-top:12px" onclick="location.href='lesson.html?id=${lesson.id}${tierQ}'">📖 강좌 다시 보기</button>
           <button class="btn btn-gray" style="margin-top:12px" onclick="qi=0;score=0;render()">🔁 다시 풀기</button>
         </div>
       `;

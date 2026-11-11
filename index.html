@@ -84,6 +84,7 @@
 
   <script src="js/common.js"></script>
   <script src="js/lessons-data.js"></script>
+  <script src="js/lesson-tiers.js"></script>
   <script>
     renderTopbar("스마트폰 AI 배움터", {
       back: false,
@@ -148,7 +149,15 @@
       items.forEach(lesson => {
         const p = Progress.get(lesson.id);
         let pill;
-        if (p.done) pill = `<span class="progress-pill">✅ 다 배웠어요</span>`;
+        if (hasTiers(lesson)) {
+          // 초급·중급·고급 각각의 상태를 작은 칩으로 표시
+          pill = TIER_LIST.map(t => {
+            const tp = Progress.get(tierKey(lesson.id, t.id));
+            const cls = tp.done ? "done" : tp.step > 0 ? "doing" : "";
+            return `<span class="tier-chip ${cls}" style="--level-color:${t.color}">${t.name} ${tp.done ? "✅" : tp.step > 0 ? "📖" : ""}</span>`;
+          }).join("");
+        }
+        else if (p.done) pill = `<span class="progress-pill">✅ 다 배웠어요</span>`;
         else if (p.step > 0) pill = `<span class="progress-pill">📖 ${p.step + 1}단계 진행 중</span>`;
         else pill = `<span class="progress-pill todo">아직 안 배웠어요</span>`;
 

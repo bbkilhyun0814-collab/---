@@ -126,3 +126,12 @@ API 주소(`/api/chat`, `/api/login`, `/api/progress`)가 같으므로 화면 �
 - 모든 화면에 설명문(description), 미리보기(og) 태그, canonical 주소가 있고, 강좌·문제 화면은 `setPageMeta()`로 강좌 이름을 제목에 넣습니다.
 - `sitemap.xml`(페이지 목록), `robots.txt`, `images/og.png`(카톡·문자 미리보기 그림)이 있습니다. 강좌를 추가하면 `sitemap.xml`에 `lesson.html?id=새아이디` 줄을 추가하세요.
 - 네이버 서치어드바이저(searchadvisor.naver.com)와 구글 서치 콘솔(search.google.com/search-console)에 사이트를 등록하고, 사이트 확인용 `<meta>` 태그를 `index.html`의 `<head>`에 넣은 뒤 사이트맵 주소 `https://silver-ai-school.onrender.com/sitemap.xml`을 제출하면 됩니다.
+
+## 기초 강좌의 초급·중급·고급
+
+기초 단계 강좌 5개는 각각 초급·중급·고급으로 나뉩니다. 강좌를 누르면 단계 고르는 화면이 먼저 나오고, 어느 단계든 바로 들어갈 수 있습니다.
+
+- 초급 내용은 `js/lessons-data.js`의 `steps`/`quiz` 그대로이고, 중급·고급은 `js/lesson-tiers.js`의 `LESSON_TIERS["강좌id"].middle/.advanced`에 있습니다.
+- 각 걸음에 `scene`을 적으면 그 휴대폰 그림을 씁니다. 단계마다 연습 문제 3개씩입니다.
+- 진도는 초급은 `강좌id`, 중급·고급은 `강좌id:middle`, `강좌id:advanced` 열쇠로 따로 저장됩니다. 첫 화면에는 세 단계 칩이 보입니다.
+- 다른 강좌에도 단계를 넣으려면 `LESSON_TIERS`에 그 강좌 id 항목을 추가하면 됩니다.

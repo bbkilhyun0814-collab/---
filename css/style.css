@@ -587,3 +587,30 @@ html[data-size="xlarge"] { font-size: 30px; }
 
 /* 읽어주는 중인 버튼: 살짝 눌린 느낌 */
 button.speaking { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.25); }
+
+/* ----- 기초 강좌의 초급·중급·고급 ----- */
+.tier-badge {
+  display: inline-block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin: 8px 0 4px;
+}
+.tier-card { border: 3px solid var(--level-color); }
+.tier-card .title { color: var(--level-color); }
+.tier-steps { font-size: 0.8rem; color: var(--text-sub); font-weight: 400; margin-left: 6px; }
+.tier-chip {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--level-color);
+  color: var(--level-color);
+  background: #fff;
+  margin: 6px 6px 0 0;
+}
+.tier-chip.done { background: var(--level-color); color: #fff; }
+.tier-chip.doing { background: #fff3e6; }

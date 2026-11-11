@@ -22,6 +22,10 @@
   <header class="topbar"></header>
 
   <main class="container">
+    <div id="tierPicker" style="display:none"></div>
+
+    <div id="lessonBody">
+    <div class="tier-badge" id="tierBadge" style="display:none"></div>
     <div class="step-indicator" id="stepIndicator"></div>
     <div class="step-bar"><div id="stepBarFill" style="width:0%"></div></div>
 
@@ -33,10 +37,13 @@
     </div>
 
     <button class="btn btn-outline" style="margin-top:14px" onclick="speakStep()">🔊 이 단계 읽어주기</button>
+    <button class="btn btn-gray" id="tierBackBtn" style="margin-top:12px;display:none" onclick="location.href='lesson.html?id='+lesson.id">↩ 초급·중급·고급 고르기</button>
+    </div>
   </main>
 
   <script src="js/common.js"></script>
   <script src="js/lessons-data.js"></script>
+  <script src="js/lesson-tiers.js"></script>
   <script src="js/phone-scene.js"></script>
   <script src="js/lesson-scenes.js"></script>
   <script>
@@ -46,27 +53,80 @@
       location.href = "index.html";
     }
 
+    // 초급·중급·고급으로 나뉜 강좌는 주소의 tier 로 어느 단계인지 정함. 없으면 고르는 화면을 보여줌.
+    const tierId = getParam("tier");
+    const tiered = hasTiers(lesson);
+    const tier = getTier(lesson, tierId);
+    const key = tierKey(lesson.id, tiered ? tier.id : null);   // 진도 저장용 열쇠
+    const steps = tier.steps;
+
     // 검색엔진·카톡 미리보기용: 강좌 이름을 제목과 설명에 넣음
-    setPageMeta(lesson.title + " - 스마트폰 AI 배움터", lesson.desc + " 어르신을 위한 단계별 스마트폰 강좌.", "lesson.html?id=" + lesson.id);
+    const tierLabel = tiered && tierId ? ` (${tier.name})` : "";
+    setPageMeta(lesson.title + tierLabel + " - 스마트폰 AI 배움터", lesson.desc + " 어르신을 위한 단계별 스마트폰 강좌.", "lesson.html?id=" + lesson.id + (tiered && tierId ? "&tier=" + tier.id : ""));
 
-    let current = Progress.get(lesson.id).step || 0;
-    if (current >= lesson.steps.length) current = 0;
+    if (tiered && !tierId) renderTierPicker();
 
-    renderTopbar(lesson.title, { speakText: () => stepText() });
+    let current = Progress.get(key).step || 0;
+    if (current >= steps.length) current = 0;
+
+    renderTopbar(lesson.title + (tiered && tierId ? " · " + tier.name : ""), { speakText: () => (tiered && !tierId) ? pickerText() : stepText() });
+
+    function pickerText() {
+      return `${lesson.title}. 초급, 중급, 고급 중에서 배울 단계를 골라 주세요. ` + TIER_LIST.map(t => `${t.name}은 ${t.desc}.`).join(" ");
+    }
+
+    // ----- 단계 고르는 화면 -----
+    function renderTierPicker() {
+      document.getElementById("lessonBody").style.display = "none";
+      const box = document.getElementById("tierPicker");
+      box.style.display = "block";
+      box.innerHTML = `
+        <div class="card" style="text-align:center">
+          <div class="step-visual">${lesson.icon}</div>
+          <p class="step-title">${lesson.title}</p>
+          <p class="step-text">어느 단계부터 배울까요? 아무 단계나 눌러도 돼요.</p>
+        </div>
+        ${TIER_LIST.map(t => {
+          const tt = getTier(lesson, t.id);
+          const p = Progress.get(tierKey(lesson.id, t.id));
+          let status;
+          if (p.done) status = `<span class="progress-pill">✅ 다 배웠어요${p.quizScore ? ` · 연습 ${p.quizScore.score}/${p.quizScore.total}` : ""}</span>`;
+          else if (p.step > 0) status = `<span class="progress-pill">📖 ${p.step + 1}단계 진행 중</span>`;
+          else status = `<span class="progress-pill todo">아직 안 배웠어요</span>`;
+          return `
+          <a class="menu-card tier-card" href="lesson.html?id=${lesson.id}&tier=${t.id}" style="--level-color:${t.color}">
+            <div class="icon">${t.icon}</div>
+            <div>
+              <p class="title">${t.name} <small class="tier-steps">${tt.steps.length}걸음</small></p>
+              <p class="desc">${t.desc} · ${tt.steps.map(s => s.title.replace(/요$/, "")).slice(0, 3).join(", ")}…</p>
+              ${status}
+            </div>
+            <span class="arrow">▶</span>
+          </a>`;
+        }).join("")}
+      `;
+    }
 
     function stepText() {
-      const s = lesson.steps[current];
+      const s = steps[current];
       return `${current + 1}단계. ${s.title}. ${s.text} ${s.tip ? "도움말. " + s.tip : ""}`;
     }
     function speakStep() { Speaker.speak(stepText()); }
 
     function render() {
-      const s = lesson.steps[current];
-      const total = lesson.steps.length;
+      if (tiered && !tierId) return;
+      if (tiered) {
+        const b = document.getElementById("tierBadge");
+        b.style.display = "inline-block"; b.style.background = tier.color;
+        b.textContent = `${tier.icon} ${tier.name} 단계`;
+        document.getElementById("tierBackBtn").style.display = "flex";
+      }
+      const s = steps[current];
+      const total = steps.length;
       document.getElementById("stepIndicator").textContent = `${total}단계 중 ${current + 1}단계`;
       document.getElementById("stepBarFill").style.width = `${((current + 1) / total) * 100}%`;
-      // 그림: 실제 사진 > 휴대폰 화면 그림 > 이모지 순서로 표시
-      const scene = getScene(lesson.id, current);
+      // 그림: 실제 사진 > 휴대폰 화면 그림 > 이모지 순서로 표시 (단계별 걸음에 scene 이 있으면 그것을 씀)
+      const scene = s.scene || (tier.id === "beginner" ? getScene(lesson.id, current) : null);
       let visualHtml = `<div class="step-visual">${s.visual}</div>`;
       if (scene && scene.image) {
         visualHtml = `<div class="step-image"><img src="${scene.image}" alt="${s.title}"></div>`;
@@ -89,17 +149,17 @@
         next.textContent = "다음 ▶";
         next.className = "btn btn-primary";
       }
-      Progress.setStep(lesson.id, current);
+      Progress.setStep(key, current);
       window.scrollTo({ top: 0, behavior: "smooth" });
       Speaker.stop();
     }
 
     document.getElementById("prevBtn").onclick = () => { if (current > 0) { current--; render(); } };
     document.getElementById("nextBtn").onclick = () => {
-      if (current < lesson.steps.length - 1) { current++; render(); }
+      if (current < steps.length - 1) { current++; render(); }
       else {
-        Progress.markDone(lesson.id);
-        location.href = `quiz.html?id=${lesson.id}`;
+        Progress.markDone(key);
+        location.href = `quiz.html?id=${lesson.id}` + (tiered ? `&tier=${tier.id}` : "");
       }
     };
 

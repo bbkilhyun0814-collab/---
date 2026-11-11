@@ -88,6 +88,15 @@ const PhoneScene = (() => {
       if (o.highlight === "shutter") h = hl(SX + SW / 2 - 36, by - 36, 72, 72, "circle");
       if (o.highlight === "thumb") h = hl(SX + 36, by - 24, 48, 48);
       if (o.highlight === "focus") h = `<rect x="${SX + 70}" y="${SY + 220}" width="80" height="80" fill="none" stroke="${C.hl}" stroke-width="5"/>` + hl(SX + 70, SY + 220, 80, 80);
+      if (o.highlight === "flip") h = hl(SX + SW - 82, by - 22, 44, 44, "circle");
+      if (o.highlight === "zoom") h = `<text x="${SX + 90}" y="${SY + 200}" font-size="46">👆</text><text x="${SX + 170}" y="${SY + 290}" font-size="46">👆</text><path d="M${SX + 125} ${SY + 215} L${SX + 95} ${SY + 170}" stroke="${C.hl}" stroke-width="6" fill="none"/><path d="M${SX + 185} ${SY + 275} L${SX + 215} ${SY + 320}" stroke="${C.hl}" stroke-width="6" fill="none"/>` + txt(SX + SW / 2, SY + 420, "두 손가락 벌리기 = 확대", 15, { fill: "#fff", bold: true, anchor: "middle" });
+      if (o.highlight === "video") { s += rect(SX + 70, by - 70, 150, 30, "rgba(255,255,255,0.3)", 15) + txt(SX + 105, by - 55, "사진", 14, { fill: "#fff", anchor: "middle" }) + txt(SX + 185, by - 55, "동영상", 14, { fill: "#ffe08a", bold: true, anchor: "middle" }) + circ(SX + SW / 2, by, 26, C.red); h = hl(SX + 150, by - 72, 80, 34) + hl(SX + SW / 2 - 36, by - 36, 72, 72, "circle"); }
+      if (o.highlight === "flash" || o.highlight === "timer" || o.highlight === "qr") {
+        s += emoji(SX + 30, SY + 26, "⚡", 24) + emoji(SX + 75, SY + 26, "⏲️", 24) + emoji(SX + 120, SY + 26, "⚙️", 24);
+        if (o.highlight === "flash") h = hl(SX + 12, SY + 8, 36, 36, "circle");
+        if (o.highlight === "timer") { s += rect(SX + 50, SY + 50, 120, 36, "#333", 10) + txt(SX + 110, SY + 68, "2초  5초  10초", 13, { fill: "#fff", anchor: "middle" }); h = hl(SX + 57, SY + 8, 36, 36, "circle") + hl(SX + 130, SY + 52, 38, 32); }
+        if (o.highlight === "qr") { s += rect(SX + 90, SY + 150, 110, 110, "#fff", 6); for (let i = 0; i < 25; i++) if ((i * 7) % 3) s += rect(SX + 98 + (i % 5) * 19, SY + 158 + Math.floor(i / 5) * 19, 15, 15, "#000", 0); s += rect(SX + 40, SY + 290, 210, 40, "#ffe08a", 20) + txt(SX + SW / 2, SY + 310, "silver-ai-school.onrender.com", 12, { bold: true, anchor: "middle" }); h = hl(SX + 40, SY + 290, 210, 40); }
+      }
       return frame(s + h, { dark: true, label: o.label });
     },
 
@@ -102,6 +111,9 @@ const PhoneScene = (() => {
         s += rect(x, y, 84, 84, c, 6) + emoji(x + 42, y + 44, icons[i], 40);
         if (i === 1 && o.highlight === "tile") h = hl(x, y, 84, 84);
       });
+      if (o.highlight === "date") { s += rect(SX + 10, SY + 40, 120, 22, "#fff", 6) + txt(SX + 16, SY + 51, "2025년 5월", 14, { bold: true }) + rect(SX + SW - 30, SY + 60, 20, 270, "#ddd", 10) + circ(SX + SW - 20, SY + 160, 14, C.blue); h = hl(SX + SW - 36, SY + 60, 32, 270); }
+      if (o.highlight === "trash" || o.highlight === "album") { s += emoji(SX + SW - 30, SY + 28, "⋮", 26); const my = SY + 50; s += rect(SX + SW - 160, my, 150, 120, "#fff", 12, `stroke="#ccc"`) + txt(SX + SW - 145, my + 30, "📁 앨범 만들기", 15) + txt(SX + SW - 145, my + 65, "🗑️ 휴지통", 15) + txt(SX + SW - 145, my + 100, "⚙️ 설정", 15); h = o.highlight === "trash" ? hl(SX + SW - 160, my + 45, 150, 36) : hl(SX + SW - 160, my + 10, 150, 36); }
+      if (o.highlight === "search") { s += rect(SX + 14, SY + 340, SW - 28, 36, C.bar, 18) + txt(SX + 30, SY + 358, "🔍 바다", 14) + txt(SX + SW / 2, SY + 400, "바다 사진 3장", 14, { fill: C.sub, anchor: "middle" }); h = hl(SX + 14, SY + 340, SW - 28, 36); }
       return frame(s + h, { label: o.label });
     },
 
@@ -111,6 +123,9 @@ const PhoneScene = (() => {
       const by = SY + SH - 50;
       ["↗️", "❤️", "✏️", "🗑️"].forEach((ic, i) => s += emoji(SX + 50 + i * 65, by, ic, 28));
       let h = "";
+      if (o.highlight === "share") h = hl(SX + 50 - 20, by - 20, 40, 40, "circle");
+      if (o.highlight === "edit") { s += rect(SX + 20, SY + 440, SW - 40, 40, "#333", 10) + txt(SX + SW / 2, SY + 460, "회전  ·  자르기  ·  저장", 15, { fill: "#fff", anchor: "middle" }); h = hl(SX + 50 + 2 * 65 - 20, by - 20, 40, 40, "circle"); }
+      if (o.highlight === "more") { s += emoji(SX + SW - 30, SY + 28, "⋮", 26, ) + rect(SX + SW - 190, SY + 50, 180, 80, "#fff", 12) + txt(SX + SW - 175, SY + 80, "🖼️ 배경화면으로 설정", 14) + txt(SX + SW - 175, SY + 115, "ℹ️ 상세정보", 14); h = hl(SX + SW - 190, SY + 62, 180, 36); }
       if (o.highlight === "trash") h = hl(SX + 50 + 3 * 65 - 20, by - 20, 40, 40, "circle");
       if (o.highlight === "pinch") h = `<text x="${SX + 80}" y="${SY + 230}" font-size="50">👆</text><text x="${SX + 180}" y="${SY + 330}" font-size="50">👆</text><path d="M${SX + 110} ${SY + 250} L${SX + 190} ${SY + 330}" stroke="${C.hl}" stroke-width="6" stroke-dasharray="10 8" fill="none"/>`;
       if (o.highlight === "swipe") h = `<text x="${SX + 200}" y="${SY + 290}" font-size="50">👆</text><path d="M${SX + 230} ${SY + 270} L${SX + 80} ${SY + 270}" stroke="${C.hl}" stroke-width="8" fill="none" marker-end="url(#arr)"/><defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="${C.hl}"/></marker></defs>`;
@@ -122,7 +137,7 @@ const PhoneScene = (() => {
       const theme = o.theme === "sms" ? { bg: "#fff", me: "#3b82f6", meText: "#fff" } : { bg: "#b2c7da", me: C.kakao, meText: "#000" };
       let s = rect(SX, SY, SW, SH, theme.bg, 0) + rect(SX, SY, SW, 50, "rgba(255,255,255,0.7)", 0) + txt(SX + SW / 2, SY + 25, o.name || "우리 딸", 18, { bold: true, anchor: "middle" });
       s += circ(SX + 30, SY + 90, 18, "#ddd") + emoji(SX + 30, SY + 91, "👩", 22);
-      s += rect(SX + 56, SY + 70, 150, 40, "#fff", 14) + txt(SX + 68, SY + 90, "엄마 잘 지내요?", 14);
+      s += rect(SX + 56, SY + 70, o.theirText ? 220 : 150, 40, "#fff", 14) + txt(SX + 68, SY + 90, o.theirText || "엄마 잘 지내요?", 14);
       s += rect(SX + SW - 180, SY + 130, 168, 40, theme.me, 14) + txt(SX + SW - 168, SY + 150, o.myText || "그럼~ 밥은 먹었니?", 14, { fill: theme.meText });
       if (o.unread) s += txt(SX + SW - 190, SY + 150, "1", 13, { fill: C.hl, anchor: "end", bold: true });
       if (o.photo) s += rect(SX + SW - 160, SY + 185, 148, 100, "#f6c7a0", 12) + emoji(SX + SW - 86, SY + 237, "🌸", 50);
@@ -174,6 +189,8 @@ const PhoneScene = (() => {
         const y = SY + 110 + i * 60;
         s += circ(SX + 36, y + 20, 20, "#e8f1fb") + emoji(SX + 36, y + 21, i === 2 ? "👩" : "🙂", 22) + txt(SX + 70, y + 20, n, 17);
         if (o.highlight === "name" && i === 2) h = hl(SX + 14, y - 4, SW - 28, 48);
+        if (o.highlight === "missed" && i === 0) { s += txt(SX + 70, y + 20, n, 17, { fill: C.red, bold: true }); h = hl(SX + 14, y - 4, SW - 28, 48); }
+        if (o.highlight === "multi" && i < 3) h += hl(SX + 14, y - 4, SW - 28, 48);
       });
       if (o.highlight === "search") h = hl(SX + 14, SY + 52, SW - 28, 36);
       if (o.highlight === "chat1on1") {
@@ -215,6 +232,9 @@ const PhoneScene = (() => {
       } else {
         s += circ(SX + 80, SY + SH - 90, 40, C.green) + emoji(SX + 80, SY + SH - 88, "📞", 34);
         s += circ(SX + SW - 80, SY + SH - 90, 40, C.red) + emoji(SX + SW - 80, SY + SH - 88, "📞", 34);
+        if (o.highlight === "decline") {
+          h = hl(SX + SW - 120, SY + SH - 130, 80, 80, "circle") + `<path d="M${SX + SW - 80} ${SY + SH - 40} L${SX + SW - 80} ${SY + SH - 10}" stroke="${C.hl}" stroke-width="8"/>` + txt(SX + SW - 80, SY + SH - 150, "아래로 쓸어내리기", 14, { fill: "#fff", anchor: "middle", bold: true });
+        }
         if (o.highlight === "answer") {
           h = hl(SX + 40, SY + SH - 130, 80, 80, "circle") + `<path d="M${SX + 80} ${SY + SH - 140} L${SX + 80} ${SY + SH - 230}" stroke="${C.hl}" stroke-width="8" marker-end="url(#arr2)"/><defs><marker id="arr2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="${C.hl}"/></marker></defs>` + txt(SX + 80, SY + SH - 250, "위로 쓸어 올리기", 14, { fill: "#fff", anchor: "middle", bold: true });
         }
@@ -306,12 +326,13 @@ const PhoneScene = (() => {
     // 설정 화면: highlight = display | fontsize
     settings(o) {
       let s = rect(SX, SY, SW, SH, "#f2f2f7", 0) + txt(SX + 16, SY + 28, "⚙️ 설정", 20, { bold: true });
-      const items = ["📶 연결", "🔔 알림", "🔆 디스플레이", "🔒 잠금화면", "🔋 배터리", "♿ 접근성"];
+      const items = ["📶 연결 (Wi-Fi)", "🔔 소리 및 진동", "🔆 디스플레이", "🔒 잠금화면", "🔋 배터리 및 저장공간", "♿ 접근성"];
+      const rowOf = { wifi: 0, sound: 1, display: 2, battery: 4, storage: 4, access: 5 };
       let h = "";
       items.forEach((it, i) => {
         const y = SY + 60 + i * 56;
         s += rect(SX + 14, y, SW - 28, 48, "#fff", 12) + txt(SX + 30, y + 24, it, 15);
-        if (o.highlight === "display" && i === 2) h = hl(SX + 14, y, SW - 28, 48);
+        if (rowOf[o.highlight] === i) h = hl(SX + 14, y, SW - 28, 48);
       });
       if (o.highlight === "fontsize") {
         s = rect(SX, SY, SW, SH, "#f2f2f7", 0) + txt(SX + 16, SY + 28, "◀ 글자 크기", 20, { bold: true });
