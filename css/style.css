@@ -584,3 +584,6 @@ html[data-size="xlarge"] { font-size: 30px; }
   .topbar .menu-btn { margin-left: auto; }
 }
 .menu-modal { overflow-y: auto; align-items: flex-start; }   /* 화면이 작아도 메뉴를 끝까지 내려볼 수 있게 */
+
+/* 읽어주는 중인 버튼: 살짝 눌린 느낌 */
+button.speaking { box-shadow: inset 0 0 0 3px rgba(0,0,0,0.25); }

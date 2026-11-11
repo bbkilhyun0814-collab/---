@@ -108,22 +108,54 @@ const Progress = {
 };
 
 // ----- 읽어주기 (브라우저 내장 음성 합성) -----
+// 읽는 중에 같은 버튼을 다시 누르면 멈춥니다. 읽는 동안 그 버튼의 🔊 는 🔇 로 바뀝니다.
 const Speaker = {
+  _text: null,      // 지금 읽고 있는 글 (안 읽을 때는 null)
+  _btn: null,       // 읽기를 시작한 버튼
+  _label: null,     // 그 버튼의 원래 글씨
+  _lastClick: { btn: null, at: 0 },
   speak(text) {
     if (!("speechSynthesis" in window)) {
       alert("이 기기에서는 읽어주기를 지원하지 않습니다.");
       return;
     }
-    window.speechSynthesis.cancel();
+    // 방금(0.3초 안에) 누른 버튼이 있으면 그 버튼이 읽기를 시작한 것으로 봅니다
+    const clicked = Date.now() - this._lastClick.at < 300 ? this._lastClick.btn : null;
+    if (clicked && this._text === text && this._btn === clicked) { this.stop(); return; }   // 다시 누름 → 멈춤
+    this.stop();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "ko-KR";
     u.rate = 0.85; // 조금 천천히
+    this._text = text;
+    this._mark(clicked);
+    u.onend = u.onerror = () => { if (this._text === text) { this._text = null; this._unmark(); } };
     window.speechSynthesis.speak(u);
   },
   stop() {
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    this._text = null;
+    this._unmark();
+  },
+  _mark(btn) {
+    if (!btn) return;
+    this._btn = btn;
+    this._label = btn.innerHTML;
+    btn.innerHTML = btn.innerHTML.replace("🔊", "🔇");
+    btn.classList.add("speaking");
+  },
+  _unmark() {
+    if (this._btn) {
+      this._btn.innerHTML = this._label;
+      this._btn.classList.remove("speaking");
+    }
+    this._btn = null; this._label = null;
   }
 };
+// 어떤 버튼이 눌렸는지 기억해 두어, 그 버튼의 그림을 바꿀 수 있게 함
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) Speaker._lastClick = { btn: b, at: Date.now() };
+}, true);
 
 // ----- 글자 크기 -----
 const FontSize = {
